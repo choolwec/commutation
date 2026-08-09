@@ -2,10 +2,15 @@ import type { Metadata, Viewport } from "next";
 import { EVENT } from "@/config/event";
 import "./globals.css";
 
+// GitHub Pages serves the app from /commutation, so anything referenced by
+// absolute path has to carry the prefix or it 404s. Files in public/ are
+// copied verbatim and get no automatic rewriting.
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export const metadata: Metadata = {
   title: EVENT.name,
   description: EVENT.tagline,
-  manifest: "/manifest.webmanifest",
+  manifest: `${BASE}/manifest.webmanifest`,
   appleWebApp: {
     capable: true,
     title: EVENT.name,
@@ -15,7 +20,10 @@ export const metadata: Metadata = {
   },
   // Stops iOS turning "1:00 PM" and any digits into blue phone links.
   formatDetection: { telephone: false, date: false, address: false },
-  icons: { apple: "/apple-touch-icon.png" },
+  icons: {
+    apple: `${BASE}/apple-touch-icon.png`,
+    icon: `${BASE}/favicon-32.png`,
+  },
 };
 
 export const viewport: Viewport = {

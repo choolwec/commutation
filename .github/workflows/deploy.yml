@@ -40,6 +40,8 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Pages serves this from /commutation, not the domain root.
+          NEXT_PUBLIC_BASE_PATH: /commutation
 
       # Stops Pages running the output through Jekyll, which would drop the
       # _next directory and break every asset on the site.

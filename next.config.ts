@@ -25,6 +25,17 @@ const nextConfig: NextConfig = {
   // Emit `/survey/index.html` rather than `/survey.html`, so hosts that
   // don't rewrite extensionless paths still serve the right file.
   trailingSlash: true,
+
+  /**
+   * GitHub Pages serves a project site from a subpath
+   * (choolwec.github.io/commutation), so every asset and link needs that
+   * prefix or the page loads with no CSS and a dead survey button.
+   *
+   * Set by the deploy workflow only. Local dev and `npm run shots` keep
+   * running at the root, and moving to a host that serves from the domain
+   * root later means unsetting one variable rather than editing code.
+   */
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || undefined,
 };
 
 export default nextConfig;
