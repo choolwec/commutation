@@ -11,7 +11,8 @@
     "shots": "node scripts/shots.mjs",
     "check": "node scripts/check.mjs",
     "reset": "node scripts/reset.mjs",
-    "e2e": "node scripts/e2e.mjs"
+    "e2e": "node scripts/e2e.mjs",
+    "live": "node scripts/live.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

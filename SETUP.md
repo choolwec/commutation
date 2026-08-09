@@ -1,39 +1,54 @@
 # Setup
 
-**Status: done and deployed.** Supabase is provisioned, all four migrations are
-applied, and the app is live at
-<https://commutation-two.vercel.app>.
+**Status: live.** → <https://choolwec.github.io/commutation/>
 
-Everything below is kept as a record of how it was set up, and for the
-day-to-day commands at the bottom.
+Supabase is provisioned, all four migrations are applied, anonymous sign-in is
+on, and the database is verified clean — six free profiles, zero answers.
+Pushing to `master` rebuilds and redeploys automatically.
+
+---
 
 ## Before you send the link
 
-1. **Open it on your iPhone.** If you get a Vercel login wall instead of
-   "Who are you?", turn protection off: Vercel → the project → Settings →
-   Deployment Protection → **Vercel Authentication → Disabled** → Save.
-   Your friends aren't on your Vercel account, so they'd otherwise be stuck.
-2. **Fill in [`src/config/event.ts`](src/config/event.ts)** once Tuesday's
-   venue is confirmed. Set `location.pending` to `false` at the same time —
-   that swaps the "still being sorted" note for the real address.
-3. **Change `bypassCode`.** It's still `letmein`.
-4. `npm run reset` — hands every profile back so the group opens a clean slate.
+1. **Fill in [`src/config/event.ts`](src/config/event.ts)** once Tuesday's venue
+   is confirmed, and set `location.pending` to `false` at the same time — that
+   swaps the "still being sorted" note for the real address.
+2. **Change `bypassCode`.** It's still `letmein`.
+3. **`npm run reset`** if you've been testing on your own phone — hands every
+   profile back and restores the default avatars.
+4. Commit and push. The site updates in about a minute.
+
+---
+
+## Why it's on GitHub Pages and not Vercel
+
+Vercel's `*.vercel.app` edge range (`216.198.79.0/24`, `64.29.17.0/24`) is not
+routable from Zambia. `vercel.com` and `nextjs.org` load fine; every deployed
+`*.vercel.app` hostname resolves and then times out. Confirmed on two
+independent networks, on both PC and phone.
+
+The app was correct the whole time — the link simply couldn't be opened, which
+would have been true for everyone else too. So the app builds as a fully static
+export (`output: "export"` in [`next.config.ts`](next.config.ts)) and is hosted
+on GitHub Pages. Cloudflare Pages and Netlify were both verified reachable too,
+if Pages ever needs replacing.
+
+Nothing was lost in the move: every route was already prerendered, and all the
+live behaviour comes from Supabase over HTTPS from the browser.
 
 ---
 
 ## How it was set up
 
-## 1 · Create the Supabase project (3 min)
+### 1 · Supabase project
 
-1. Go to [supabase.com/dashboard](https://supabase.com/dashboard) → **New project**
-2. Name it `commutation`. Pick the region closest to you. Set a database password
-   and let the browser save it — you won't need it again.
-3. Wait for it to finish provisioning (~2 min).
+[supabase.com/dashboard](https://supabase.com/dashboard) → **New project**,
+named `commutation`.
 
-## 2 · Run the database migrations (1 min)
+### 2 · Migrations
 
-In the project, open **SQL Editor** → **New query**, then paste and run each
-file in [`supabase/migrations/`](supabase/migrations/) in order:
+**SQL Editor** → **New query**, then paste and run each file in
+[`supabase/migrations/`](supabase/migrations/) in order:
 
 | File | What it does |
 |---|---|
@@ -43,50 +58,36 @@ file in [`supabase/migrations/`](supabase/migrations/) in order:
 | `0004_save_answer_rpc.sql` | The write path the app actually uses |
 
 Each should end with `Success. No rows returned.` **Watch for that message** —
-a migration that half-applies fails silently and is genuinely hard to spot
-later. Run `npm run check` afterwards to confirm.
+a half-applied migration fails silently and is genuinely hard to spot later.
+`npm run check` confirms the real state.
 
-## 3 · Turn on anonymous sign-in (30 sec)
+### 3 · Anonymous sign-in
 
-**Authentication → Sign In / Providers → Anonymous sign-ins → toggle ON → Save.**
+**Authentication → Sign In / Providers → Anonymous sign-ins → ON.**
+This gives each phone a stable identity without anyone making an account.
+The app cannot work without it.
 
-This is what gives each phone a stable identity without anyone making an account.
-**The app cannot work without it** — if you skip this step you'll get a
-"couldn't reach the database" screen.
+### 4 · Keys
 
-## 4 · Grab your two keys (1 min)
+**Settings → API keys** → Project URL and the `anon` / `publishable` key.
 
-**Settings → API keys**. You need:
+These live in three places: `.env.local` for local dev, and GitHub Actions
+secrets `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` for the
+build. `NEXT_PUBLIC_*` values are inlined at build time, so they must be
+present when the workflow runs, not at runtime.
 
-| Field | Goes into |
-|---|---|
-| Project URL | `NEXT_PUBLIC_SUPABASE_URL` |
-| `anon` / `public` key | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+The anon key is safe in a browser bundle by design — row-level security
+protects the data, not the key. Never put the `service_role` key here.
 
-The anon key is safe to expose in a browser — RLS is what protects the data,
-not the key. Never use the `service_role` key here.
-
-## 5 · Run it locally (2 min)
+### 5 · Local
 
 ```bash
-cp .env.local.example .env.local   # then paste your two values in
+cp .env.local.example .env.local   # paste your two values
 npm install
 npm run dev
 ```
 
-Open <http://localhost:3000>. You should see "Who are you?" with all six names.
-
-## 6 · Deploy (3 min)
-
-```bash
-git init && git add -A && git commit -m "Commutation stage 1"
-gh repo create commutation --private --source=. --push
-```
-
-Then at [vercel.com/new](https://vercel.com/new): **Import** the repo →
-add the same two environment variables → **Deploy**.
-
-Vercel gives you a URL like `commutation.vercel.app`. That's the link you send.
+<http://localhost:3000> → "Who are you?" with all six names.
 
 ---
 
@@ -94,16 +95,18 @@ Vercel gives you a URL like `commutation.vercel.app`. That's the link you send.
 
 | Command | Does |
 |---|---|
-| `npm run check` | 13 assertions against the live database, including that one user can't read another's answers. Prints pass/fail only — never answer content. |
-| `npm run reset` | Hands every profile back and purges test rows. Run before sending the link. |
-| `npm run e2e` | Drives the real app in a phone-sized browser: claims, types, reloads, asserts the answer persisted and that the hub leaks nothing. |
+| `npm run check` | 13 assertions against the live database, including that one user cannot read another's answers. Prints pass/fail only — never answer content. |
+| `npm run reset` | Hands every profile back, purges test rows, restores default avatars. |
+| `npm run e2e` | Drives the local app in a phone-sized browser: claims, types, reloads, asserts the answer persisted and the hub leaks nothing. |
+| `npm run live` | Smoke-tests the deployed site — assets, Supabase connectivity, all six names. |
 | `npm run shots` | Screenshots the UI at iPhone size into `.shots/`. |
 
 ---
 
 ## What to send the group
 
-> Right — Saturday. Everything's here: **https://commutation-two.vercel.app**
+> Right — Saturday, 1 till 8. Everything's here:
+> **https://choolwec.github.io/commutation/**
 >
 > Tap your name, then answer whatever you want. Nothing's compulsory, skip
 > anything. It saves as you go so you can do it in bits.
@@ -116,24 +119,22 @@ Vercel gives you a URL like `commutation.vercel.app`. That's the link you send.
 
 ---
 
-## Editing the details later
-
-Everything you'd want to change lives in [`src/config/event.ts`](src/config/event.ts) —
-address, times, schedule, what to bring, the unlock time, the bypass code.
-Change, commit, push. Vercel redeploys automatically.
-
 ## Checking who's answered — and who hasn't
 
 The hub shows everyone's answer **count**, never their content. That's the
 whole design: the reveals only work on Saturday if nobody, including you, has
 read them first. Chase people on the number, not the substance.
 
+---
+
 ## If something breaks
 
 | Symptom | Cause |
 |---|---|
-| Vercel: *"CCheelo tried to deploy a commit but they aren't a member of the team"* | Vercel's Git integration checks the **commit author's email**, not who pushed. This repo is pinned to `choolwecheelo22@gmail.com` (`git config user.email`), which the Vercel team recognises. The GitHub noreply address `…+CCheelo@users.noreply.github.com` is a different identity and gets refused. |
-| "Almost there" screen | Env vars missing or misspelled. On Vercel, redeploy after adding them. |
-| "Couldn't reach the database" | Step 3 (anonymous sign-ins) not done, or the migration didn't run. |
-| Wrong name claimed | On the hub, tap "Not <name>?" at the bottom to hand it back. Answers stay saved. |
+| "Almost there" screen | Build ran without the two GitHub Actions secrets. Check **Settings → Secrets and variables → Actions**, then re-run the workflow. |
+| "Couldn't reach the database" | Anonymous sign-ins switched off, or a migration didn't apply. Run `npm run check`. |
+| Page loads unstyled, survey button dead | `basePath` mismatch. Pages serves from `/commutation`, set by `NEXT_PUBLIC_BASE_PATH` in the deploy workflow. |
+| Wrong name claimed | Hub → "Not \<name\>?" hands it back. Or just tap the right name — taking a profile back never reveals anyone's answers. |
+| Someone locked out after clearing Safari | Tap their name and confirm the takeover. Past answers stay sealed but new ones save fine. |
 | Countdown looks wrong | `unlocksAt` in `src/config/event.ts`. Months are 0-indexed: `7` = August. |
+| Deploy skipped, "not a member of the team" | Vercel-era issue, no longer applies. The repo's git identity is pinned to `choolwecheelo22@gmail.com` regardless. |

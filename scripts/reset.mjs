@@ -85,6 +85,31 @@ for (const p of before) {
 }
 if (purged) console.log(`  ✓ purged test rows`);
 
+// Restore avatars to the defaults in src/config/crew.ts. Test runs pick
+// emoji, and everyone should meet a clean profile rather than someone
+// else's leftovers.
+const DEFAULTS = {
+  choolwe: { emoji: "👑", color: "#f59e0b" },
+  chileleko: { emoji: "🔥", color: "#ef4444" },
+  joy: { emoji: "✨", color: "#a855f7" },
+  latasha: { emoji: "🦋", color: "#06b6d4" },
+  niza: { emoji: "🌙", color: "#6366f1" },
+  chibesa: { emoji: "⚡", color: "#10b981" },
+};
+
+for (const [id, d] of Object.entries(DEFAULTS)) {
+  const current = before.find((p) => p.id === id);
+  if (!current) continue;
+  const { error: cErr } = await supabase.rpc("claim_profile", { p_id: id });
+  if (cErr) continue;
+  await supabase
+    .from("players")
+    .update({ ...d, hype_word: null, trash_talk: null })
+    .eq("id", id);
+  await supabase.rpc("release_profile");
+}
+console.log("  ✓ restored default avatars");
+
 const { data: after } = await supabase
   .from("players")
   .select("name,claimed_by,answers_count")
