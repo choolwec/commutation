@@ -63,9 +63,16 @@ for (const p of claimed) {
 // These are authored by long-dead sessions, so a plain DELETE can't touch
 // them (deletes are author-scoped). save_answer() runs SECURITY DEFINER and
 // treats a blank value as "remove the row", so claiming each seat lets us
-// clear them. Only ever targets these known test keys — it cannot and must
-// not touch a real answer.
-const TEST_KEYS = ["__rls_probe__", "__repro__", "__diag__", "emoji", "arrival"];
+// clear them.
+//
+// ONLY synthetic, double-underscore-wrapped ids belong in this list.
+// "emoji" and "arrival" were in here until this fix — those are REAL survey
+// question ids (survey.ts: yours.emoji, logistics.arrival), so every run of
+// this script was silently deleting anyone's genuine answers to those two
+// questions, on every profile, whether or not they were actually claimed.
+// Never add a real question id here again — only ids no real answer could
+// ever collide with.
+const TEST_KEYS = ["__rls_probe__", "__repro__", "__diag__"];
 
 let purged = 0;
 for (const p of before) {

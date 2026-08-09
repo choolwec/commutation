@@ -27,6 +27,15 @@ export function useAnswers() {
   const pending = useRef<Map<string, string>>(new Map());
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Only the id, not the whole player object. `me` gets a new object
+  // identity every time updateMe() does its optimistic roster write (e.g.
+  // on every keystroke into the walk-on word field) — depending on the
+  // object itself re-ran the fetch below on every one of those keystrokes,
+  // and the server response would land moments later and overwrite
+  // whatever had been typed since. That's what looked like text "deleting
+  // itself" while typing.
+  const meId = me?.id ?? null;
+
   // ── load ────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +43,7 @@ export function useAnswers() {
       const supabase = getSupabase();
       // No backend (preview, or a broken deploy): fall back to local-only
       // state so the form still works rather than hanging on "loading".
-      if (!supabase || !me) {
+      if (!supabase || !meId) {
         setLoaded(true);
         return;
       }
@@ -56,7 +65,7 @@ export function useAnswers() {
     return () => {
       cancelled = true;
     };
-  }, [me]);
+  }, [meId]);
 
   // ── flush ───────────────────────────────────────────────────────────
   const flush = useCallback(async () => {

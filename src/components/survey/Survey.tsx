@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SECTIONS, TOTAL_QUESTIONS } from "@/config/survey";
 import { usePlayer } from "@/lib/player";
 import { useAnswers, key } from "@/lib/useAnswers";
@@ -42,14 +42,51 @@ export function Survey() {
   const pct = Math.min(100, Math.round((answered / TOTAL_QUESTIONS) * 100));
 
   // Section 1 doubles as profile setup, so mirror those onto the player row
-  // where the rest of the app reads them from.
+  // where the rest of the app reads them from (leaderboard, TV mode).
+  //
+  // hype_word/trash_talk are free text, so this fires on every keystroke —
+  // debounced, because the mirror is read elsewhere in the app but never by
+  // this input (its value comes from `answers`, below), so there's nothing
+  // to lose by waiting for a pause. Undebounced, every keystroke wrote to
+  // Supabase and re-rendered every field on the page.
+  const profileTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
+  const profilePending = useRef<Map<string, string>>(new Map());
+  function mirrorToProfile(field: "hype_word" | "trash_talk", value: string) {
+    profilePending.current.set(field, value);
+    const existing = profileTimers.current.get(field);
+    if (existing) clearTimeout(existing);
+    profileTimers.current.set(
+      field,
+      setTimeout(() => {
+        profilePending.current.delete(field);
+        void updateMe({ [field]: value });
+      }, 700),
+    );
+  }
+
   function handleChange(qid: string, i: number, v: string) {
     set(qid, i, v);
     if (qid === "emoji" && v) void updateMe({ emoji: v });
     if (qid === "color" && v) void updateMe({ color: v });
-    if (qid === "hype_word") void updateMe({ hype_word: v });
-    if (qid === "trash_talk") void updateMe({ trash_talk: v });
+    if (qid === "hype_word") mirrorToProfile("hype_word", v);
+    if (qid === "trash_talk") mirrorToProfile("trash_talk", v);
   }
+
+  // Leaving mid-debounce shouldn't drop the mirror write — the authoritative
+  // copy is already safe in survey_responses via set()/flush(), but the
+  // players-table mirror (what the leaderboard and TV actually read) would
+  // otherwise sit stale until the field is edited again.
+  useEffect(() => {
+    const timers = profileTimers.current;
+    const pending = profilePending.current;
+    return () => {
+      for (const t of timers.values()) clearTimeout(t);
+      for (const [field, value] of pending) void updateMe({ [field]: value });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- flush-on-unmount only
+  }, []);
 
   async function next() {
     await flush();
