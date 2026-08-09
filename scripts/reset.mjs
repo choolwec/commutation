@@ -59,6 +59,32 @@ for (const p of claimed) {
   else console.log(`  ✓ released ${p.name}`);
 }
 
+// ── purge rows left by the test scripts ──────────────────────────────────
+// These are authored by long-dead sessions, so a plain DELETE can't touch
+// them (deletes are author-scoped). save_answer() runs SECURITY DEFINER and
+// treats a blank value as "remove the row", so claiming each seat lets us
+// clear them. Only ever targets these known test keys — it cannot and must
+// not touch a real answer.
+const TEST_KEYS = ["__rls_probe__", "__repro__", "__diag__", "emoji", "arrival"];
+
+let purged = 0;
+for (const p of before) {
+  const { error: cErr } = await supabase.rpc("claim_profile", { p_id: p.id });
+  if (cErr) continue;
+  for (const q of TEST_KEYS) {
+    const { error } = await supabase.rpc("save_answer", {
+      p_player_id: p.id,
+      p_section_id: "logistics",
+      p_question_id: q,
+      p_answer_index: 0,
+      p_value: "",
+    });
+    if (!error) purged++;
+  }
+  await supabase.rpc("release_profile");
+}
+if (purged) console.log(`  ✓ purged test rows`);
+
 const { data: after } = await supabase
   .from("players")
   .select("name,claimed_by,answers_count")

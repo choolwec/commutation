@@ -1,8 +1,27 @@
-# Setup — 10 minutes, one time
+# Setup
 
-Choolwe: this is the only doc you need. Three accounts, two keys, one paste of SQL.
+**Status: done and deployed.** Supabase is provisioned, all four migrations are
+applied, and the app is live at
+<https://commutation-two.vercel.app>.
+
+Everything below is kept as a record of how it was set up, and for the
+day-to-day commands at the bottom.
+
+## Before you send the link
+
+1. **Open it on your iPhone.** If you get a Vercel login wall instead of
+   "Who are you?", turn protection off: Vercel → the project → Settings →
+   Deployment Protection → **Vercel Authentication → Disabled** → Save.
+   Your friends aren't on your Vercel account, so they'd otherwise be stuck.
+2. **Fill in [`src/config/event.ts`](src/config/event.ts)** once Tuesday's
+   venue is confirmed. Set `location.pending` to `false` at the same time —
+   that swaps the "still being sorted" note for the real address.
+3. **Change `bypassCode`.** It's still `letmein`.
+4. `npm run reset` — hands every profile back so the group opens a clean slate.
 
 ---
+
+## How it was set up
 
 ## 1 · Create the Supabase project (3 min)
 
@@ -11,14 +30,21 @@ Choolwe: this is the only doc you need. Three accounts, two keys, one paste of S
    and let the browser save it — you won't need it again.
 3. Wait for it to finish provisioning (~2 min).
 
-## 2 · Run the database migration (1 min)
+## 2 · Run the database migrations (1 min)
 
-1. In the project, open **SQL Editor** → **New query**
-2. Open [`supabase/migrations/0001_stage1_survey.sql`](supabase/migrations/0001_stage1_survey.sql),
-   copy the whole file, paste it in, hit **Run**.
-3. You should see `Success. No rows returned.`
+In the project, open **SQL Editor** → **New query**, then paste and run each
+file in [`supabase/migrations/`](supabase/migrations/) in order:
 
-This creates the tables, the row-level security policies, and seeds all six of you.
+| File | What it does |
+|---|---|
+| `0001_stage1_survey.sql` | Tables, RLS, seeds the six of you |
+| `0002_profile_takeover.sql` | Lets a stranded profile be reclaimed |
+| `0003_write_ownership.sql` | First attempt at write ownership — superseded |
+| `0004_save_answer_rpc.sql` | The write path the app actually uses |
+
+Each should end with `Success. No rows returned.` **Watch for that message** —
+a migration that half-applies fails silently and is genuinely hard to spot
+later. Run `npm run check` afterwards to confirm.
 
 ## 3 · Turn on anonymous sign-in (30 sec)
 
@@ -64,9 +90,20 @@ Vercel gives you a URL like `commutation.vercel.app`. That's the link you send.
 
 ---
 
+## Everyday commands
+
+| Command | Does |
+|---|---|
+| `npm run check` | 13 assertions against the live database, including that one user can't read another's answers. Prints pass/fail only — never answer content. |
+| `npm run reset` | Hands every profile back and purges test rows. Run before sending the link. |
+| `npm run e2e` | Drives the real app in a phone-sized browser: claims, types, reloads, asserts the answer persisted and that the hub leaks nothing. |
+| `npm run shots` | Screenshots the UI at iPhone size into `.shots/`. |
+
+---
+
 ## What to send the group
 
-> Right — Saturday. Everything's here: **<your-vercel-url>**
+> Right — Saturday. Everything's here: **https://commutation-two.vercel.app**
 >
 > Tap your name, then answer whatever you want. Nothing's compulsory, skip
 > anything. It saves as you go so you can do it in bits.
