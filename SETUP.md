@@ -132,6 +132,7 @@ read them first. Chase people on the number, not the substance.
 
 | Symptom | Cause |
 |---|---|
+| Vercel: *"CCheelo tried to deploy a commit but they aren't a member of the team"* | Vercel's Git integration checks the **commit author's email**, not who pushed. This repo is pinned to `choolwecheelo22@gmail.com` (`git config user.email`), which the Vercel team recognises. The GitHub noreply address `…+CCheelo@users.noreply.github.com` is a different identity and gets refused. |
 | "Almost there" screen | Env vars missing or misspelled. On Vercel, redeploy after adding them. |
 | "Couldn't reach the database" | Step 3 (anonymous sign-ins) not done, or the migration didn't run. |
 | Wrong name claimed | On the hub, tap "Not <name>?" at the bottom to hand it back. Answers stay saved. |
