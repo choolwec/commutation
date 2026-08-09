@@ -67,41 +67,32 @@ export function useAnswers() {
     pending.current.clear();
     setSaveState("saving");
 
-    const rows = batch.map(([k, value]) => {
-      const idx = k.lastIndexOf(":");
-      const questionId = k.slice(0, idx);
-      const answerIndex = Number(k.slice(idx + 1));
-      return {
-        player_id: me.id,
-        section_id: sectionOf(questionId),
-        question_id: questionId,
-        answer_index: answerIndex,
-        value,
-      };
-    });
-
-    const blanks = rows.filter((r) => r.value.trim() === "");
-    const filled = rows.filter((r) => r.value.trim() !== "");
-
     let failed = false;
 
-    // Clearing a field should delete the row, not store an empty string —
-    // otherwise it counts toward progress and can surface as a blank card.
-    for (const b of blanks) {
-      const { error } = await supabase
-        .from("survey_responses")
-        .delete()
-        .eq("player_id", b.player_id)
-        .eq("question_id", b.question_id)
-        .eq("answer_index", b.answer_index);
-      if (error) failed = true;
-    }
+    // One RPC per changed field. save_answer() replaces the row rather than
+    // upserting it, which is what makes a row inherited from a previous
+    // session (cleared Safari storage, profile takeover) writable at all —
+    // ON CONFLICT DO UPDATE needs SELECT visibility, and reads are
+    // deliberately author-scoped. Blank values delete server-side.
+    const results = await Promise.all(
+      batch.map(([k, value]) => {
+        const idx = k.lastIndexOf(":");
+        const questionId = k.slice(0, idx);
+        return supabase.rpc("save_answer", {
+          p_player_id: me.id,
+          p_section_id: sectionOf(questionId),
+          p_question_id: questionId,
+          p_answer_index: Number(k.slice(idx + 1)),
+          p_value: value,
+        });
+      }),
+    );
 
-    if (filled.length) {
-      const { error } = await supabase
-        .from("survey_responses")
-        .upsert(filled, { onConflict: "player_id,question_id,answer_index" });
-      if (error) failed = true;
+    for (const r of results) {
+      if (r.error) {
+        failed = true;
+        console.error("[commutation] save failed:", r.error.message);
+      }
     }
 
     setSaveState(failed ? "error" : "saved");

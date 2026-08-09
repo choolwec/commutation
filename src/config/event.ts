@@ -21,25 +21,37 @@ export const EVENT = {
 
   /** Shown on the countdown so nobody has to decode a timestamp. */
   dateLabel: "Saturday 15 August",
-  timeLabel: "1:00 PM",
+  timeLabel: "1:00 – 8:00 PM",
 
   /** ── PLACEHOLDERS — replace these ─────────────────────────── */
   location: {
     name: "TBC",
-    address: "Address goes here",
+    address: "Confirmed on Tuesday",
     /** Paste a Google/Apple Maps share link. Empty string hides the button. */
     mapsUrl: "",
     /** Anything useful: gate code, parking, "buzz flat 3", etc. Empty hides it. */
     note: "",
+    /**
+     * Set false once the venue is locked in — it swaps the "still being
+     * sorted" line on the hub for the real address, so nobody turns up
+     * somewhere wrong on the strength of a placeholder.
+     */
+    pending: true,
   },
 
-  /** Rough running order shown on the hub. Purely informational. */
+  /**
+   * Rough running order shown on the hub. Seven hours, deliberately loose —
+   * there are far more games than fit, and that's the point: the day picks
+   * what it wants rather than grinding through a list.
+   */
   schedule: [
-    { time: "1:00 PM", what: "Arrive, eat, talk nonsense" },
-    { time: "2:00 PM", what: "Games begin" },
-    { time: "5:00 PM", what: "Food break" },
-    { time: "7:00 PM", what: "It gets worse" },
-    { time: "Late", what: "Awards + damage assessment" },
+    { time: "1:00", what: "Arrive, eat, talk nonsense" },
+    { time: "2:00", what: "Games begin — warm-up rounds" },
+    { time: "3:30", what: "Big screen, phones as controllers" },
+    { time: "5:00", what: "Food, and something involving standing up" },
+    { time: "6:00", what: "Lights down. It gets worse." },
+    { time: "7:30", what: "Awards + damage assessment" },
+    { time: "8:00", what: "Out" },
   ],
 
   /** Bullet list on the hub. */

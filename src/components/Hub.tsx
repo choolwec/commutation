@@ -143,9 +143,18 @@ export function Hub() {
 
       {/* ── logistics ────────────────────────────────────────────── */}
       <Section label="Where">
-        <div className="rounded-2xl border border-line bg-ink-2 p-4">
+        <div
+          className={`rounded-2xl border bg-ink-2 p-4 ${
+            EVENT.location.pending ? "border-dashed border-line" : "border-line"
+          }`}
+        >
           <p className="text-base font-bold">{EVENT.location.name}</p>
           <p className="mt-1 text-sm text-mute">{EVENT.location.address}</p>
+          {EVENT.location.pending && (
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-wider text-gold">
+              still being sorted — this page updates itself
+            </p>
+          )}
           {EVENT.location.note && (
             <p className="mt-2 text-sm text-mute">{EVENT.location.note}</p>
           )}

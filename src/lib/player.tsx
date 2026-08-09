@@ -108,19 +108,25 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const supabase = getSupabase();
       if (!supabase || !uid) return false;
 
-      // The `is null` guard is what stops two people grabbing the same
-      // profile: whoever's write lands second matches no rows and is told.
-      const { data, error: err } = await supabase
-        .from("players")
-        .update({ claimed_by: uid, claimed_at: new Date().toISOString() })
-        .eq("id", playerId)
-        .is("claimed_by", null)
-        .select();
+      // Goes through claim_profile() so a profile stranded by a cleared
+      // Safari session can always be taken back — see migration 0002.
+      const { error: rpcErr } = await supabase.rpc("claim_profile", {
+        p_id: playerId,
+      });
 
-      if (err || !data || data.length === 0) {
+      if (rpcErr) {
+        // Falls back to the plain update if 0002 hasn't been applied yet;
+        // that path can only claim a profile nobody currently holds.
+        const { data, error: err } = await supabase
+          .from("players")
+          .update({ claimed_by: uid, claimed_at: new Date().toISOString() })
+          .eq("id", playerId)
+          .is("claimed_by", null)
+          .select();
         await load();
-        return false;
+        return !err && (data?.length ?? 0) > 0;
       }
+
       await load();
       return true;
     },
@@ -130,10 +136,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const release = useCallback(async () => {
     const supabase = getSupabase();
     if (!supabase || !me) return;
-    await supabase
-      .from("players")
-      .update({ claimed_by: null, claimed_at: null })
-      .eq("id", me.id);
+    const { error: rpcErr } = await supabase.rpc("release_profile");
+    if (rpcErr) {
+      await supabase
+        .from("players")
+        .update({ claimed_by: null, claimed_at: null })
+        .eq("id", me.id);
+    }
     await load();
   }, [me, load]);
 

@@ -17,11 +17,21 @@ export function ClaimScreen() {
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
 
-  async function pick(id: string) {
+  async function pick(id: string, taken: boolean, name: string) {
+    // A taken profile is recoverable, not dead: someone who mis-tapped, or
+    // whose Safari cleared its storage, has to be able to get back in.
+    // Taking over never exposes the previous session's answers.
+    if (taken) {
+      const ok = confirm(
+        `${name} is already claimed on another device.\n\n` +
+          `Only take this if it's yours — it'll sign the other device out.`,
+      );
+      if (!ok) return;
+    }
     setBusy(id);
     setFailed(null);
-    const ok = await claim(id);
-    if (!ok) setFailed(id);
+    const done = await claim(id);
+    if (!done) setFailed(id);
     setBusy(null);
   }
 
@@ -46,9 +56,11 @@ export function ClaimScreen() {
             <button
               key={p.id}
               type="button"
-              disabled={taken || busy !== null}
-              onClick={() => pick(p.id)}
-              className="rise relative flex flex-col items-start gap-2 rounded-2xl border border-line bg-ink-2 p-4 text-left transition active:scale-[0.97] disabled:opacity-35"
+              disabled={busy !== null}
+              onClick={() => pick(p.id, taken, p.name)}
+              className={`rise relative flex flex-col items-start gap-2 rounded-2xl border border-line bg-ink-2 p-4 text-left transition active:scale-[0.97] disabled:opacity-50 ${
+                taken ? "opacity-45" : ""
+              }`}
               style={{ animationDelay: `${i * 45}ms` }}
             >
               <span
@@ -59,7 +71,11 @@ export function ClaimScreen() {
               </span>
               <span className="text-base font-bold">{p.name}</span>
               <span className="text-[11px] font-medium uppercase tracking-wider text-mute">
-                {busy === p.id ? "claiming…" : taken ? "taken" : "that's me"}
+                {busy === p.id
+                  ? "claiming…"
+                  : taken
+                    ? "taken · tap if yours"
+                    : "that's me"}
               </span>
               {taken && (
                 <span
@@ -75,13 +91,14 @@ export function ClaimScreen() {
 
       {failed && (
         <p className="mt-5 text-sm text-flame">
-          Someone just took that one. Pick another, or if it was really you,
-          grab a different name and tell Choolwe.
+          That didn&apos;t go through. Try again, or pick another name and tell
+          Choolwe.
         </p>
       )}
 
       <p className="mt-8 text-xs leading-relaxed text-mute">
-        Picked wrong? You can hand a profile back from the hub.
+        Picked wrong? Hand it back from the hub, or just tap the right name —
+        taking a profile back never shows you anyone else&apos;s answers.
       </p>
     </main>
   );

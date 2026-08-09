@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "shots": "node scripts/shots.mjs",
+    "check": "node scripts/check.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
