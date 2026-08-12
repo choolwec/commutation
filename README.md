@@ -14,7 +14,10 @@ across three halls, playable on six iPhones with an optional TV.
 **Stage 1 — shipped.** Info hub, countdown, profile claiming, and the eight-section
 survey. This is what goes out to the group now.
 
-**Stage 2 — next.** The game console, unlocking automatically at the countdown.
+**Stage 2 — built, pre-rehearsal.** The game console: 16 games across the Vault,
+the Huddle and the Arena, unlocking automatically at the countdown. Still needs
+a real six-tab-plus-TV dress rehearsal and an iPhone pass before Saturday — see
+[docs/HANDOFF.md §12](docs/HANDOFF.md#12-stage-2--what-actually-got-built-wed-12-aug).
 
 ## The one rule
 

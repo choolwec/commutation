@@ -6,6 +6,7 @@ import { usePlayer } from "@/lib/player";
 import { EVENT } from "@/config/event";
 import { TOTAL_QUESTIONS } from "@/config/survey";
 import { Countdown } from "./Countdown";
+import { Evidence } from "./Evidence";
 
 function Section({
   label,
@@ -66,9 +67,29 @@ export function Hub() {
         </p>
       </div>
 
+      {/* ── the games ────────────────────────────────────────────── */}
+      <Link
+        href="/play"
+        className="rise mt-10 flex items-center justify-between overflow-hidden rounded-3xl border border-line bg-ink-2 p-5 transition active:scale-[0.98]"
+        style={{ animationDelay: "40ms" }}
+      >
+        <span>
+          <span className="block text-[11px] font-bold uppercase tracking-[0.2em] text-flame">
+            🔒 📱 📺
+          </span>
+          <span className="mt-1 block text-lg font-black tracking-tight">
+            The Vault · The Huddle · The Arena
+          </span>
+          <span className="mt-1 block text-xs text-mute">
+            Unlocks automatically at {EVENT.timeLabel.split("–")[0].trim()}
+          </span>
+        </span>
+        <span className="text-2xl text-mute">→</span>
+      </Link>
+
       {/* ── the ask ──────────────────────────────────────────────── */}
       <div
-        className="rise mt-10 overflow-hidden rounded-3xl border border-line bg-ink-2"
+        className="rise mt-6 overflow-hidden rounded-3xl border border-line bg-ink-2"
         style={{ animationDelay: "80ms" }}
       >
         <div className="p-5">
@@ -198,6 +219,25 @@ export function Hub() {
         </ul>
       </Section>
 
+      <Section label="Evidence">
+        <div className="space-y-2">
+          <Link
+            href="/recap"
+            className="flex items-center justify-between rounded-2xl border border-line bg-ink-2 px-4 py-3 active:scale-[0.98]"
+          >
+            <span className="text-sm font-semibold">Photo recap</span>
+            <span className="text-mute">→</span>
+          </Link>
+          <Link
+            href="/awards"
+            className="flex items-center justify-between rounded-2xl border border-line bg-ink-2 px-4 py-3 active:scale-[0.98]"
+          >
+            <span className="text-sm font-semibold">🏆 Awards</span>
+            <span className="text-mute">→</span>
+          </Link>
+        </div>
+      </Section>
+
       {/* ── install prompt ───────────────────────────────────────── */}
       <Section label="One more thing">
         <div className="rounded-2xl border border-dashed border-line p-4">
@@ -221,6 +261,17 @@ export function Hub() {
           Not {me.name}?
         </button>
       )}
+
+      {me?.id === "choolwe" && (
+        <Link
+          href="/test"
+          className="mt-6 block w-full rounded-2xl border border-dashed border-line py-3 text-center text-xs font-bold text-mute active:scale-[0.98]"
+        >
+          🧪 Test the games (before Saturday, fake data only)
+        </Link>
+      )}
+
+      <Evidence />
     </main>
   );
 }
