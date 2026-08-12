@@ -5,9 +5,10 @@ Read this whole file before touching anything — several mistakes were made
 and fixed along the way, and the fixes only hold if you don't undo them
 without knowing why they're there.
 
-**Snapshot taken:** Sun 9 Aug 2026, evening. If it's later than that, treat
-anything time-sensitive below (survey counts, "not yet built") as stale and
-re-verify rather than trust it.
+**Snapshot taken:** Sun 9 Aug 2026, evening; **updated Wed 12 Aug 2026** when
+Stage 2 was built (see §12). If it's later than that, treat anything
+time-sensitive below (survey counts, "not yet built") as stale and re-verify
+rather than trust it.
 
 ---
 
@@ -19,7 +20,9 @@ drinking) on **Saturday 15 Aug 2026, 13:00–20:00**.
 
 - **Stage 1** (info hub + a private, sealed survey) — **built, live, verified.**
 - **Stage 2** (a synced multiplayer game console that unlocks automatically
-  at 13:00 Saturday) — **not started.** Full design in [PLAN.md](PLAN.md).
+  at 13:00 Saturday) — **built, 16 games, not yet dress-rehearsed.** Full
+  original design in [PLAN.md](PLAN.md); what actually got built, and where
+  it diverges, is §12.
 
 The whole point of the survey: real confessions, hot takes, and predictions
 from the group become the content for Stage 2's games (`Who Wrote It?`,
@@ -300,18 +303,38 @@ in the working tree, that's expected — they were throwaway by design.
   "Seal it" (submitted) yet.
 - **`SUPABASE_SERVICE_ROLE_KEY`** is in `.env.local`, verified working,
   not yet used for anything beyond that verification.
-- **Stage 2:** not started. Deliberately — the plan is to wait for more
-  survey data before running the content-tiering subagent (see §2), and to
-  start the actual game-console build midweek (per PLAN.md: Wed–Fri, dress
-  rehearsal Friday night, unlock fires Sat 13:00).
+- **Stage 2:** built Wed 12 Aug — engine, all 16 games, `/play`, `/tv`,
+  Evidence, Awards. Not yet dress-rehearsed on real devices. See §12.
+- **`SUPABASE_DB_URL`** is now in `.env.local` too (added Wed 12 Aug, needed
+  to run migrations directly — see §12's note on `scripts/migrate.mjs`).
+  Same rule as the service-role key: this one, never committed, never a
+  GitHub Actions secret.
 
 **Choolwe's outstanding to-dos** (not something to do for him without
 asking, but worth surfacing if picking this up mid-week):
 - Real venue address, once confirmed — `src/config/event.ts`, plus flip
   `location.pending` to `false`.
-- Change `bypassCode` from `"letmein"` — and per §6, move it out of a public
-  source file entirely before `/unlock` is built to consume it.
-- Nudge Chileleko, Joy, Latasha — currently zero answers each.
+- ~~Change `bypassCode` from `"letmein"`~~ — done Wed 12 Aug: it's out of
+  the public repo entirely now, living only in the `room_secrets` table
+  (§12). A placeholder value was set so the unlock flow has something to
+  test against; **change it to something only you know** before Saturday —
+  SQL editor: `update room_secrets set value = 'xxx' where key =
+  'bypass_code';`. Nobody else who's read this file knows what the
+  placeholder currently is.
+- Nudge Chileleko, Joy, Latasha — as of Wed 12 Aug they'd caught up
+  (39/20/39 answers respectively, all six profiles claimed) — re-verify
+  with a fresh count query rather than trusting this.
+- **Friday morning, once the survey is actually closed (not before —
+  people are still answering as of Wed 12 Aug):** have an isolated
+  background subagent (per §2 — never the main conversation thread) go
+  through every submitted answer and standardize formatting — consistent
+  capitalization, trimmed whitespace, stray punctuation — so what shows up
+  in-game Saturday reads cleanly. This is a WRITE to `survey_responses`,
+  unlike everything else that pattern has been used for so far (which only
+  ever read); treat it with the same caution as `reset.mjs` gets in §8 —
+  dry-run it first (report what it *would* change, counts only, before
+  touching anything), and don't let it run unsupervised. Requested by
+  Choolwe on 12 Aug; deliberately not done yet.
 
 ---
 
@@ -328,3 +351,151 @@ asking, but worth surfacing if picking this up mid-week):
 5. For any Stage 2 work that needs to read real survey content (tiering,
    interpreting invented rounds), do it via an isolated background
    subagent per §2 — not in the main conversation thread.
+6. If Stage 2 exists (check for `src/games/`), also run `npm run
+   check:engine` and read §12 before touching any game.
+
+---
+
+## 12. Stage 2 — what actually got built (Wed 12 Aug)
+
+Built in one session, three days out from Saturday: the whole engine, all
+16 games, `/play`, `/tv`, Evidence, Awards. Everything below is real and
+verified — `npx tsc --noEmit`, `npm run lint`, `npm run build` (static
+export, all 10 routes prerender), `npm run check`, and `npm run
+check:engine` all pass as of this writing. **What hasn't happened yet: a
+real six-tab dress rehearsal, and testing on an actual iPhone.** PLAN.md's
+verification checklist for Stage 2 is still the bar to clear before
+Saturday — nothing below substitutes for it.
+
+### Schema — migrations 0005 through 0011
+
+Same rule as §5: run in order, don't skip around. Unlike 0001–0004 (pasted
+into the SQL editor by hand), these were applied with `node
+scripts/migrate.mjs <file>` — a real script, one transaction per file, so a
+failure rolls back instead of half-applying like 0003 did. Needs
+`SUPABASE_DB_URL` in `.env.local` (see §6). `node scripts/migrate.mjs
+--all` runs every migration in the folder in order; safe to re-run, every
+statement in every file is idempotent.
+
+| File | What it does |
+|---|---|
+| `0005_game_engine.sql` | Core tables: `game_room` (one row, singleton), `room_secrets` (RLS on, zero SELECT policies — unreadable through the API by construction), `rounds`, `round_items`, `round_secrets`, `submissions`, `votes`, `scores`, the `leaderboard` view. This is where the privacy shape lives: content and authorship are separate tables with separate RLS, so "who wrote it" is unreadable until a round's `phase` says otherwise — not by convention, by Postgres refusing the query, same discipline as Stage 1's `survey_responses`. |
+| `0006_game_rpcs.sql` | Every mutation is a `SECURITY DEFINER` function that checks who's asking before doing anything — no table has an INSERT/UPDATE policy for players directly. `start_round`, `deal_from_survey` (the only thing in the whole system allowed to read `survey_responses.value` — never granted to a client, only callable from inside `start_round`), `set_phase`/`set_cursor`/`set_reveal`, `submit_answer`, `cast_vote`, `score_item`/`score_plurality`, `open_room_if_due`/`unlock_with_code` (the bypass code, checked server-side against `room_secrets`). |
+| `0007_decks_and_evidence.sql` | Standalone games that don't need the survey at all: `deal_deck` (host's device supplies content, e.g. Spyfall locations), `deal_roles` (the odd-one-out primitive — Postgres draws who gets the different card, so the drawing device can never be the one who knows), `deal_private`, `award_points`, `start_deck_round`, `score_odd_one_out`. Plus Evidence: `evidence_prompts`/`evidence_photos` tables, `schedule_evidence` (lays out the whole day's random photo prompts in one call), `complete_evidence`, and a public-read `evidence` Storage bucket. |
+| `0008_more_primitives.sql` | Three gaps found while actually building the games (see the file's own header for the reasoning): `deal_hidden_answer` (Know Me Best — question public, real answer sealed, which `deal_from_survey` couldn't do because it couples the two), `reveal_item` (Paranoia's coin flip — the only way a privately-dealt card can become public), and `round_events` + `seed_truth_submission` (Buzz In needs "who buzzed first" visible to everyone *instantly*, the opposite of how submissions/votes work; Fibbage/Drawful need a "true answer" option indistinguishable from real submissions, solved by letting a submission have no author). |
+| `0009_pass_tokens.sql` | `use_pass()` — the only self-service write against `scores`. Truth or Dare's 2-passes-a-day economy; every other point comes from a host-gated function. |
+| `0010_fix_lobby_default.sql` | One-line fix: `rounds.phase` defaulted to `'lobby'`, but none of the 16 games' `start()` functions transition out of it, and `submit_answer`/`cast_vote` only accept `phase in ('play','vote')`. Every round would have rejected its first tap. Changed the column default to `'play'` rather than editing sixteen call sites that were all written assuming a fresh round was immediately playable. |
+| `0011_test_mode.sql` | `rounds.is_test`, `deal_test_pair`/`deal_test_hidden` (fake content only, never reads `survey_responses`), `clear_test_rounds`, and a `p_test` param added to `start_round`/`start_deck_round`. Powers `/test` — see its own section below. |
+
+`scripts/check-engine.mjs` is the Stage-2 equivalent of `scripts/check.mjs`
+— 17 behavioral assertions, attacks not descriptions (signs in as a
+throwaway player and tries to read what it shouldn't), prints pass/fail and
+counts only, cleans up its own test rows, never touches the six real
+profiles. Run it after touching any migration.
+
+### `/test` — playing games solo before the day (migration 0011)
+
+Choolwe asked to be able to test-play games on his phone before Saturday.
+The obvious way (just open `/play` and use the bypass code) has two real
+problems: it permanently sets `unlocked_at` for **everyone**, days early,
+with no way to undo it — and five games read real sealed survey content in
+their normal `start()`, so "just testing" would mean a real confession
+getting read before the day, which is exactly the thing §2 promises never
+happens, Choolwe included.
+
+`/test` (linked from the hub, visible only when `me.id === 'choolwe'`)
+solves both: it skips the unlock gate entirely without ever touching
+`unlocked_at`, and every round it starts is tagged `is_test = true`
+(`rounds.is_test`, migration 0011). `who_wrote_it`, `know_me_best`,
+`the_deep_end`, `most_likely_to` and `best_answer` each ship a `startTest`
+on their `GameModule` that deals obviously-fake content via
+`deal_test_pair`/`deal_test_hidden` instead of running their real
+survey-reading `start()` — those two new RPCs never read
+`survey_responses`, which is the actual safety property, not a convention.
+Every other game just reuses its real `start()` with `p_test: true`
+injected, since those never touched real content to begin with. A "Clear
+all test data" button calls `clear_test_rounds()`, which cascades away
+everything a test round touched — items, secrets, submissions, votes, and
+critically the points it awarded, so test play can never leak into the
+real Saturday leaderboard.
+
+**Extending this:** any new game whose `start()` reads `survey_responses`
+needs a matching `startTest`. Anything that only uses `deal_deck`/
+`deal_roles`/`deal_private` doesn't — those never touched real content
+either.
+
+### The 16 games
+
+Built across two parallel background sessions plus the main thread, each
+briefed with the same contract (`src/lib/game/types.ts`'s `GameModule`) and
+told independently to give their games a distinct visual identity rather
+than sharing one generic template — Choolwe was explicit that games which
+all look the same don't get played. Registered in `src/games/registry.ts`.
+
+- **🔒 Vault** (sealed until unlock, runs on real survey answers): Who Wrote
+  It?, Know Me Best, Paranoia, The Deep End, Truth or Dare.
+- **📱 Huddle** (phone-only, no TV needed): Most Likely To, Spyfall, The
+  Chameleon, Hot Takes, Never Have I Ever, Mafia.
+- **📺 Arena** (TV-first, greyed out in the launcher until `/tv` is open on
+  a laptop): Drawful, Fibbage, Best Answer, Buzz In (Trivia), Buzz In (Name
+  That Tune).
+
+Every game follows the same shape: `start()` deals the round via RPCs
+(never reads sealed content itself — that's Postgres's job), `PhoneView`
+renders off `useRoom()`. Adding a 17th game is a new folder plus one line
+in the registry, same as the original design intended.
+
+### Known simplifications — real, not hidden
+
+Time-boxed decisions, worth revisiting if there's slack before Saturday:
+
+- **No bespoke `TvView` for any Arena game yet.** `/tv` falls back to a
+  generic board (the round's public content + the live leaderboard) for
+  anything without one. Every Arena game is fully playable phone-only right
+  now — the TV adds a shared display, not a requirement — but the "TV is
+  the stage" spectacle PLAN.md described for Drawful/Fibbage/Buzz In isn't
+  built yet.
+- **Deck answer keys ship in the JS bundle** (Fibbage's facts, Trivia's
+  answers) — a determined cheater could read them in devtools. Same trust
+  level as a board game's answer booklet in the box; not worth a server
+  round-trip for six people who know each other. The one place this was
+  worth fixing properly: Fibbage's actual answer is sealed server-side via
+  `seed_truth_submission`, same mechanism Drawful reuses.
+- **Mafia's "who's still alive" is tracked in the host's own local React
+  state**, not the database. A live game of Mafia is always run by a
+  moderator narrating out loud anyway; this just gives them a private
+  ballot box, same division of labor as the real thing. Nobody's phone
+  hard-blocks a dead player from voting — the host self-polices it.
+- **Truth or Dare's pass counter is a static line**, not a live "you have 1
+  left" — `useRoom()` doesn't expose raw `scores`, and extending it wasn't
+  worth the scope for a display-only counter.
+- **Name That Tune needs internet at play time.** Clips stream live from
+  Apple's iTunes preview API (see `src/config/name-that-tune.ts` for why —
+  short version: committing real song files to this public repo, even
+  temporarily, is real copyright distribution, so nothing is hosted here).
+  Confirmed CORS-open and working as of Wed 12 Aug; if it ever isn't, Buzz
+  In: Trivia doesn't depend on it and still works.
+- **`docs/THEIR_ROUNDS.md` has a full buildable spec for the group's 12
+  invented rounds** (section 7 of the survey) — sorted by a subagent that
+  never let the raw text reach this conversation, per §2. Two turned out to
+  be existing named games ("Contact", a letter-reveal word game; and a
+  30-Seconds-style rapid question circle), one was recognisably Mafia and
+  got skipped per Choolwe's own rule (Mafia got built as its own game
+  instead, from a direct request, not from that submission). **None of
+  these are wired into the registry yet** — the spec is ready, the modules
+  aren't built. This is the highest-value remaining work if there's time
+  before Friday.
+
+### Before Saturday
+
+1. Real dress rehearsal — PLAN.md's checklist: six browser tabs plus a TV
+   tab playing one round of everything, then the same on a real iPhone
+   (lock/unlock mid-round, two minutes untouched to confirm no wake-lock
+   regression — the wake lock itself was never built this session, worth
+   checking it's still on the list).
+2. Change the bypass code (§10's to-do list, above).
+3. Build from `docs/THEIR_ROUNDS.md` if there's time.
+4. Consider at least one bespoke `TvView` — Drawful is the highest-value
+   candidate, it's the game that most needs the shared screen.
+5. Set the unlock a few minutes ahead once, watch `/play` and `/tv` both
+   transition live, then reset `EVENT.unlocksAt` back to 13:00 Saturday.
