@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { useRoom } from "@/lib/game/room";
+import { useWakeLock } from "@/lib/useWakeLock";
 import { GAMES, gameById } from "@/games/registry";
 import type { GameModule } from "@/lib/game/types";
 import { Leaderboard } from "./Leaderboard";
@@ -44,6 +45,9 @@ export function TestRoom() {
   const [starting, setStarting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+
+  // Solo dress rehearsal still deserves a screen that doesn't lock mid-game.
+  useWakeLock(true);
 
   const testable = GAMES.filter((g) => !g.requiresTv);
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { useRoom } from "@/lib/game/room";
+import { useWakeLock } from "@/lib/useWakeLock";
 import { EVENT } from "@/config/event";
 import { Countdown } from "@/components/Countdown";
 
@@ -21,6 +22,11 @@ export function PlayGate({ children }: { children: React.ReactNode }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  // Held for the whole time the room is open, not just during an active
+  // round — someone browsing the Launcher shouldn't have their screen lock
+  // between taps either.
+  useWakeLock(unlocked);
 
   // Any phone can be the one that flips the switch — first to notice wins,
   // and open_room_if_due() checks the SERVER's clock, so a phone with the
