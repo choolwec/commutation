@@ -7,8 +7,17 @@
  * the bonus rather than the foundation.
  *
  * House rules baked into everything here:
- *  - No drinking. Not a forfeit, not a dare, not a punishment.
- *  - Platonic group. Adult and mean is fine; sexual is not the register.
+ *  - No drinking. Not a forfeit, not a dare, not a punishment. Untouched,
+ *    always.
+ *  - Platonic group, bolder register than the original build (loosened
+ *    13 Aug 2026 from this file's old "sexual is not the register" line,
+ *    by explicit direction): bolder, more embarrassing, flirtier, and more
+ *    romantically pointed is all fair game for Truth or Dare and Never
+ *    Have I Ever specifically. Truths (and NHIE's tap-then-talk shape) can
+ *    ask about crushes, attraction, and dating history — that's talk, not
+ *    an act. Hard ceiling, not negotiable: no dare may involve kissing,
+ *    touching, or anything physically/sexually intimate, and nothing
+ *    explicit, ever.
  *  - Nothing that breaks property, skin, or a friendship.
  *  - Anything requiring an object assumes a normal living room.
  */
@@ -244,31 +253,37 @@ export const NEVER_HAVE_I_EVER = {
     "Never have I ever pretended to be on the phone to avoid someone",
     "Never have I ever eaten something off the floor",
     "Never have I ever laughed at completely the wrong moment",
-    "Never have I ever gone a full week without washing a specific item of clothing I kept wearing",
+    "Never have I ever texted \"on my way\" before I'd even left the house",
+    "Never have I ever stalked someone's social media the night before meeting them",
+    "Never have I ever practiced a conversation in the mirror before actually having it",
   ],
   real: [
     "Never have I ever lied about where I was",
     "Never have I ever read a message I wasn't supposed to see",
-    "Never have I ever pretended to like someone's cooking",
-    "Never have I ever talked about someone in this room",
-    "Never have I ever taken credit for something I didn't do",
-    "Never have I ever cancelled plans and immediately gone out anyway",
-    "Never have I ever stalked someone's profile for more than an hour",
-    "Never have I ever pretended a gift was bought rather than re-gifted",
-    "Never have I ever kept money that wasn't mine",
-    "Never have I ever unfollowed someone out of pure spite",
+    "Never have I ever liked someone's old photo just to see if they'd notice",
+    "Never have I ever kept talking to someone after realising it wasn't going anywhere",
+    "Never have I ever had a crush on someone I never told a single person about",
+    "Never have I ever cancelled plans with someone to see someone else instead",
+    "Never have I ever stayed up way too late texting someone I liked",
+    "Never have I ever pretended to be single when I wasn't, even for a moment",
+    "Never have I ever gotten jealous over someone I had no actual claim to",
+    "Never have I ever fallen for someone based on their voice or texting alone",
+    "Never have I ever rehearsed how I'd respond if someone confessed feelings for me",
+    "Never have I ever unfollowed someone specifically to get over them",
   ],
   reckless: [
     "Never have I ever had a crush on a friend's sibling",
-    "Never have I ever lied to get out of trouble and let someone else take it",
+    "Never have I ever liked two people at once and not known who to choose",
+    "Never have I ever fallen for someone I knew, at the time, was bad for me",
+    "Never have I ever had feelings for someone in this exact room",
     "Never have I ever sent a message to the wrong person and panicked",
-    "Never have I ever kept a secret that would ruin something",
-    "Never have I ever pretended to be someone I'm not online",
-    "Never have I ever judged someone in this room before I knew them",
-    "Never have I ever had a serious argument I started for no reason",
-    "Never have I ever wanted something someone in this room has",
-    "Never have I ever broken a promise I fully intended to keep",
-    "Never have I ever done something I still haven't told anyone about",
+    "Never have I ever kept a secret that would genuinely ruin something if it got out",
+    "Never have I ever judged someone in this room before I actually knew them",
+    "Never have I ever wanted something — or someone — that belonged to a friend",
+    "Never have I ever let a crush go because I was too scared to say anything",
+    "Never have I ever been someone's rebound and known it at the time",
+    "Never have I ever had a situationship I never fully explained to anyone",
+    "Never have I ever caught real feelings from something that was supposed to be casual",
   ],
 } as const;
 
@@ -280,48 +295,66 @@ export const NEVER_HAVE_I_EVER = {
 export const TRUTHS = {
   warm: [
     "What's the most embarrassing thing on your phone right now?",
-    "Who in this room would you call in an emergency, and why them?",
-    "What's a compliment you've never given anyone here?",
-    "What's the pettiest reason you've disliked someone?",
-    "What's the biggest lie you tell yourself?",
+    "Who in this room would you trust to plan your entire day, no questions asked?",
+    "What's a compliment you've been sitting on and never actually said out loud?",
+    "Who's the last person you had even a tiny crush on, and how long did it last?",
+    "If you had to set two people in this room up, who's the pair and why?",
+    "What's the pettiest reason you've ever gone off someone?",
+    "Who here gives the best 'meet-my-parents-first' first impression?",
+    "What's a lie you've told to get out of a date — or into one?",
   ],
   real: [
-    "Who in this room have you misjudged, and how?",
-    "What's something you've never forgiven someone for?",
-    "What's the most jealous you've ever been?",
-    "What's a thing you pretend not to care about but really do?",
-    "What's the worst thing you've ever said to someone you love?",
+    "Who in this room do you think is the most charming, and why them specifically?",
+    "Have you ever had a crush on someone in this exact room? You don't have to name them.",
+    "What's a type of person you're drawn to that would genuinely surprise this room?",
+    "Who here gives you the most main-character energy on a night out?",
+    "What's the most jealous you've ever been over someone — and was it fair?",
+    "Who in this room do you think would be hardest to get over?",
+    "What's something you've never forgiven an ex for?",
+    "Who here do you think reads people best, and what have they probably picked up on about you?",
   ],
   reckless: [
-    "What's the thing you'd least want everyone in this room to know?",
-    "Who here have you talked about the most behind their back?",
-    "What's a decision you made that you know was wrong and did anyway?",
-    "What do you actually think your biggest flaw is — and who here has seen it?",
-    "What's something you've done that you'd deny right now if asked directly?",
+    "Name the person in this room you'd most likely fall for in a different life, and give one real reason.",
+    "Who here has given you butterflies at least once, even for a second?",
+    "What's the thing about you that, if this room knew, would change how they flirt with you?",
+    "Who in this room do you think has quietly been into someone here?",
+    "What's the boldest thing you've ever done to get someone's attention?",
+    "Who here would you take a second look at if you were meeting them for the first time tonight?",
+    "What's a 'type' you have that nobody in this room would guess?",
+    "Who's the one person in this room you've never been able to fully read — and does that intrigue you?",
   ],
 } as const;
 
 export const DARES = {
   warm: [
-    "Let the person on your left post anything they want on your story",
-    "Do your best impression of someone in this room until they guess it's them",
-    "Speak in an accent for the next three rounds",
+    "Text your last match or crush 'thinking of you' and show the room whatever reply you get",
+    "Give your most convincing pickup line as a performance — no target, just commit to the bit",
+    "Let the room pick who you have to compliment, out loud, for a full minute",
     "Call the fifth person in your recent calls and sing them happy birthday",
-    "Let the group pick your profile picture for 24 hours",
+    "Let the group pick your profile picture for the next 24 hours",
+    "Post 'feeling single and ready to mingle' as your status until your next turn",
+    "Do a dramatic slow-motion entrance across the room like you're in a music video",
+    "Let the person on your left post anything they want on your story",
   ],
   real: [
     "Read out your last five text messages, sender names included",
-    "Let someone else scroll your camera roll for 30 seconds, out loud",
-    "Send a voice note to your family group chat saying whatever the room decides",
-    "Show the room the last thing you searched",
-    "Let the person opposite you write a message from your account, unread",
+    "Let the room write your dating-app bio for you, then read it exactly as written",
+    "Call someone and ask them, dead serious, if they've ever had a crush on you",
+    "Show the room the last profile you double-tapped or lingered on",
+    "Do your impression of how you flirt when you're nervous",
+    "Sing one verse of a song the room picks like you actually mean every word",
+    "Reveal who's saved in your phone under a nickname, and what the nickname is",
+    "Send a voice note to the group chat confessing your most embarrassing celebrity crush",
   ],
   reckless: [
-    "Text the last person you argued with something the room chooses",
-    "Let the room read one full conversation of their choosing from your phone",
-    "Say one honest thing about every person in this room, no compliments allowed",
-    "Reveal the contact name you've saved someone in this room under",
-    "Let the group ask you three questions you must answer honestly, no passes",
+    "Text the last person you had a crush on exactly what the room tells you to say",
+    "Let the room read one real conversation of their choosing from your phone, out loud",
+    "Say one honest thing you find attractive about each person in this room, no repeats",
+    "Reveal the actual contact name you've saved someone in this room under",
+    "Let the group ask you three questions about your love life — no passes, no lies",
+    "Do your most dramatic 'this is my villain origin story' monologue about your worst rejection",
+    "Read today's horoscope out loud like it's a declaration of love",
+    "Let the room pick one person here and give them a genuine, unjoking compliment for 30 seconds straight",
   ],
 } as const;
 
