@@ -52,8 +52,9 @@ export const RULES: Record<string, string[]> = {
   ],
   chameleon: [
     "Everyone sees the same word-grid — except the secret Chameleon, who only sees the topic.",
-    "Going around, say ONE word connected to the secret word. The Chameleon has to bluff something that could fit anything on the grid.",
-    "Vote for who you think the Chameleon is. Catch them and the room scores; the Chameleon scores instead if they survive the vote.",
+    "Going around before the timer runs out, say ONE word connected to the secret word. The Chameleon has to bluff something that could fit anything on the grid.",
+    "Vote for who you think the Chameleon is. Catch them and the room scores; the Chameleon scores 250 instead if they survive the vote.",
+    "Caught anyway? You get one guess at the secret word for partial credit — nail it and you still score.",
   ],
   hot_takes: [
     "One of you secretly sees an exact spot on a spectrum, like \"Overrated ↔ Underrated.\"",

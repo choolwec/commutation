@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
 import type { GameModule } from "@/lib/game/types";
 import { GameShell, PrimaryButton, WaitingOnHost } from "@/components/play/GameShell";
 import { PersonVote } from "@/components/play/PersonVote";
+import { RoundTimer } from "@/components/play/RoundTimer";
 import { CHAMELEON_GRIDS } from "@/config/decks";
 
 /**
@@ -18,9 +19,16 @@ import { CHAMELEON_GRIDS } from "@/config/decks";
  * (`deal_roles`, kind 'role', idx 0) — Postgres, not the host's device,
  * picks the chameleon, so the host can play too. Both rows share idx 0 but
  * differ in `kind`, so they coexist without clashing.
+ *
+ * Two additions on top of the base mechanic (P2 polish, not just copy):
+ * a shared countdown for the "say one word" phase so it can't stall out
+ * forever, and — straight from the real board game — a caught chameleon
+ * gets one guess at the secret word for partial credit (award_chameleon_
+ * guess, migration 0014) rather than just losing outright.
  */
 
 const CHAMELEON_CARD = "You don't know the word. Bluff.";
+const WORD_PHASE_SECONDS = 90;
 
 function Grid({ words, topic }: { words: string[]; topic?: string }) {
   return (
@@ -69,8 +77,65 @@ function RoleCard({
   );
 }
 
-function RevealPanel({ idx }: { idx: number }) {
-  const { roster } = usePlayer();
+function ChameleonGuessBox({
+  round,
+  onResolved,
+}: {
+  round: { id: string };
+  onResolved: (result: "correct" | "wrong") => void;
+}) {
+  const { call } = useRoom();
+  const [guess, setGuess] = useState("");
+  const [result, setResult] = useState<"correct" | "wrong" | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (!guess.trim() || busy) return;
+    setBusy(true);
+    try {
+      const correct = await call("award_chameleon_guess", {
+        p_round: round.id,
+        p_guess: guess.trim(),
+      });
+      const outcome = correct ? "correct" : "wrong";
+      setResult(outcome);
+      onResolved(outcome);
+    } catch {
+      setResult("wrong");
+      onResolved("wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (result) {
+    return (
+      <p className={`text-sm font-bold ${result === "correct" ? "text-flame" : "text-mute"}`}>
+        {result === "correct" ? "Nailed it — +100 for the read." : "Not quite — no points, nice try."}
+      </p>
+    );
+  }
+
+  return (
+    <div className="rise space-y-3 rounded-3xl border border-flame/40 bg-flame/10 p-5">
+      <p className="text-xs font-bold uppercase tracking-wider text-flame">
+        Caught — one guess at the word for partial credit
+      </p>
+      <input
+        value={guess}
+        onChange={(e) => setGuess(e.target.value)}
+        placeholder="What was the word?"
+        className="w-full rounded-2xl border border-line bg-ink-2 px-4 py-3 text-center text-base outline-none focus:border-flame/60"
+      />
+      <PrimaryButton onClick={() => void submit()} disabled={!guess.trim() || busy}>
+        {busy ? "Checking…" : "Lock in guess"}
+      </PrimaryButton>
+    </div>
+  );
+}
+
+function RevealPanel({ idx, round }: { idx: number; round: { id: string } }) {
+  const { me, roster } = usePlayer();
   const { votes, secrets } = useRoom();
   const secret = secrets.find((s) => s.idx === idx);
   const chameleon = roster.find((p) => p.id === secret?.author);
@@ -78,6 +143,14 @@ function RevealPanel({ idx }: { idx: number }) {
   const roundVotes = votes.filter((v) => v.idx === idx);
   const caught = roundVotes.filter((v) => v.value === secret?.author).length;
   const survived = secret?.author ? caught * 2 <= roundVotes.length : false;
+  const iAmChameleon = Boolean(me && secret?.author === me.id);
+
+  // The word is already in this phone's memory the instant reveal opens —
+  // round_secrets RLS keys off round.phase, not who's asking — so this gate
+  // is honor-system UI sequencing, not real secrecy. Same trust level
+  // already accepted for Fibbage/Trivia's answer keys (see 0014's header).
+  const [wordUnlocked, setWordUnlocked] = useState(false);
+  const showWord = !iAmChameleon || survived || wordUnlocked;
 
   return (
     <div className="rise space-y-4 text-center">
@@ -93,7 +166,21 @@ function RevealPanel({ idx }: { idx: number }) {
       ) : (
         <p className="text-mute">No chameleon was dealt.</p>
       )}
-      {word && (
+
+      {iAmChameleon && !survived && (
+        <ChameleonGuessBox round={round} onResolved={() => setWordUnlocked(true)} />
+      )}
+      {iAmChameleon && !survived && !showWord && (
+        <button
+          type="button"
+          onClick={() => setWordUnlocked(true)}
+          className="text-xs text-mute underline underline-offset-4"
+        >
+          Skip — just show me the word
+        </button>
+      )}
+
+      {showWord && word && (
         <p className="text-sm text-mute">
           The word was <span className="font-semibold text-paper">{word}</span>
         </p>
@@ -182,10 +269,22 @@ function Phone() {
 
       {!voting && !revealed && (
         <>
+          <RoundTimer
+            seconds={WORD_PHASE_SECONDS}
+            onExpire={() => void toVote()}
+            className="mb-3 block text-center text-3xl"
+          />
           <RoleCard knowsWord={knowsWord} content={roleItem.content} />
           <p className="mt-4 text-center text-sm text-mute">
-            Go round and each say one word about it. When you&apos;re ready, vote for
-            the chameleon.
+            Go round and say ONE word each about it — no repeats. Too obvious
+            (basically naming it) and the chameleon bluffs right back at you;
+            too vague (something that fits half the grid) and the room stops
+            trusting your word either.
+          </p>
+          <p className="mt-2 text-center text-xs text-mute/70">
+            Example: secret word &quot;Pizza&quot; on a foods grid —
+            &quot;cheesy&quot; is sharp but safe, &quot;food&quot; is too
+            vague, &quot;pepperoni&quot; might give it away outright.
           </p>
         </>
       )}
@@ -201,7 +300,7 @@ function Phone() {
 
       {revealed && (
         <div className="mt-6">
-          <RevealPanel idx={0} />
+          <RevealPanel idx={0} round={round} />
         </div>
       )}
     </GameShell>
@@ -236,6 +335,12 @@ export const chameleon: GameModule = {
       p_odd_content: CHAMELEON_CARD,
       p_odd_count: 1,
     });
+
+    // rounds.phase already defaults to 'play' (migration 0010), but
+    // started_at only gets set by set_phase/set_cursor — never on insert.
+    // Without this, RoundTimer's countdown has no reference point until
+    // *something* else calls set_phase, which nothing does before "vote."
+    await call("set_phase", { p_round: roundId, p_phase: "play" });
   },
   PhoneView: Phone,
 };
