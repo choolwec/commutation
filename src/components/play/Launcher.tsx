@@ -90,7 +90,20 @@ function HallSection({
 }) {
   const { tvConnected } = useRoom();
   const games = GAMES.filter((g) => g.hall === hall);
+  const house = games.filter((g) => g.origin !== "group");
+  const theirs = games.filter((g) => g.origin === "group");
   const blocked = hall === "arena" && !tvConnected;
+
+  const tiles = (list: GameModule[]) =>
+    list.map((g) => (
+      <GameTile
+        key={g.id}
+        game={g}
+        disabled={!canLaunch || blocked || starting !== null}
+        dealing={starting === g.id}
+        onLaunch={() => onLaunch(g)}
+      />
+    ));
 
   return (
     <section className="rise">
@@ -106,17 +119,27 @@ function HallSection({
           only the host can launch — browse away
         </p>
       )}
-      <div className="mt-3 space-y-2">
-        {games.map((g) => (
-          <GameTile
-            key={g.id}
-            game={g}
-            disabled={!canLaunch || blocked || starting !== null}
-            dealing={starting === g.id}
-            onLaunch={() => onLaunch(g)}
-          />
-        ))}
-      </div>
+      <div className="mt-3 space-y-2">{tiles(house)}</div>
+
+      {/* The rounds the group invented themselves in survey section 7. They
+          get their own heading rather than being mixed in: on the day, the
+          fact that a third of the schedule came out of the room is worth
+          seeing. WHOSE idea each one was stays sealed — see THEIR_ROUNDS.md's
+          own header for why that reveal is the payoff. */}
+      {theirs.length > 0 && (
+        <div className="mt-7">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-black tracking-tight">🧠 Your Rounds</h2>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mute">
+              {theirs.length} of them
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs text-mute">
+            Games this room invented. Nobody&apos;s played these before.
+          </p>
+          <div className="mt-3 space-y-2">{tiles(theirs)}</div>
+        </div>
+      )}
     </section>
   );
 }

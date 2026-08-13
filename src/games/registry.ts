@@ -26,6 +26,18 @@ import { bestAnswer } from "./arena/best-answer";
 import { buzzInTrivia, buzzInMusic } from "./arena/buzz-in";
 import { drawful } from "./arena/drawful";
 
+// The group's own, from survey section 7 — see docs/THEIR_ROUNDS.md. Marked
+// `origin: "group"` on each module, which is what the Launcher groups on.
+import { actItOut } from "./huddle/act-it-out";
+import { thirtySeconds } from "./huddle/thirty-seconds";
+import { spellItOut } from "./huddle/spell-it-out";
+import { surveySays } from "./huddle/survey-says";
+import { clapCircle } from "./huddle/clap-circle";
+import { questionVolley } from "./huddle/question-volley";
+import { speedCards } from "./huddle/speed-cards";
+import { centreStage } from "./huddle/centre-stage";
+import { contact } from "./huddle/contact";
+
 export const GAMES: GameModule[] = [
   // 🔒 Vault
   whoWroteIt,
@@ -40,6 +52,16 @@ export const GAMES: GameModule[] = [
   hotTakes,
   neverHaveIEver,
   mafia,
+  // 📱 Huddle — the group's own rounds
+  actItOut,
+  thirtySeconds,
+  spellItOut,
+  surveySays,
+  questionVolley,
+  clapCircle,
+  contact,
+  centreStage,
+  speedCards,
   // 📺 Arena
   drawful,
   fibbage,

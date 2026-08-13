@@ -38,6 +38,7 @@ export const RULES: Record<string, string[]> = {
     "Pick Warm, Real, or Reckless — dares get bolder and truths get more pointed the deeper the tier.",
     "Whoever's turn it is answers the truth out loud, or does the dare.",
     "Don't want it? Tap Pass — costs 25 points, 2 a day, but it instantly deals the next card for everyone, no waiting on the host.",
+    "Last card in the deck is a FORFEIT: one person gets a card only their phone can see, and it involves ringing a real person. If it doesn't fit their life they can swap it, and nobody's told they did.",
   ],
   most_likely_to: [
     "A \"Most likely to ___\" prompt shows up, pulled from the group's own survey answers.",
@@ -95,5 +96,57 @@ export const RULES: Record<string, string[]> = {
     "A short clip streams live straight to the host's screen or speaker.",
     "First phone to slam BUZZ locks in and has to name the song out loud.",
     "Same rules as Trivia's buzzer: right answer scores big, wrong answer costs you points.",
+  ],
+
+  // ── the group's own rounds (docs/THEIR_ROUNDS.md) ────────────────────
+  // These are the ones nobody has played before, so they get one extra
+  // line each where the twist genuinely needs it.
+  act_it_out: [
+    "One person gets a word on their phone and acts it out. No talking, no spelling, no pointing at things in the room.",
+    "Two cards in five come up OPPOSITE DAY — they act the opposite of their word, and you still have to type the word that's ON the card, not the one they're showing you.",
+    "Everyone else types their guess. Anyone who gets it takes 100, and synonyms count — you won't lose it on 'tired' versus 'exhausted'.",
+  ],
+  thirty_seconds: [
+    "One person gets a card of five things nobody else can see, and has 30 seconds to get the room to say all five.",
+    "They can't say the word, any part of it, or 'rhymes with'. Everyone else just shouts — wrong answers cost nothing.",
+    "The clock only starts when the describer taps GO, so they get a second to read. The count ticks up live on everyone's phone as they land.",
+    "100 a word to the describer. Everyone takes a turn describing.",
+  ],
+  spell_it_out: [
+    "One person reads a word out loud — they get it on their phone with a sentence to say it in.",
+    "Everyone else spells it at the same time. No turns, no elimination, nobody sits and watches.",
+    "The reveal puts every attempt side by side, which is the point. 100 for each correct spelling, and autocorrect is off.",
+  ],
+  survey_says: [
+    "A prompt like \"name something you always forget when leaving the house\". Everyone writes a short answer privately.",
+    "There's no right answer — you score by MATCHING other people in this room. Being predictable is the skill here.",
+    "100 for every other person who wrote the same thing as you. Match two people and that's 200. Say something nobody else said and you get nothing.",
+  ],
+  question_volley: [
+    "You get asked a question. Do NOT answer it — turn to the next person and ask them something instead.",
+    "You've got three seconds. Freeze past that and you have to actually answer the one you were asked, honestly.",
+    "Tap \"I froze\" on your own phone when it happens — nobody's policing it but you. Anyone who never cracks takes 100 at the end.",
+  ],
+  clap_circle: [
+    "Sat in a circle. ONE clap passes it on the way the arrow's pointing. TWO claps sends it back the other way. THREE claps skips whoever's next.",
+    "Clap out of turn, or miss your turn when it reaches you, and you're out. The host calls it — arguing about whether that was a clap is half the game.",
+    "Points go by how long you survive: first out gets the least, last one standing takes the most.",
+  ],
+  contact: [
+    "One person holds a secret word and reveals it one letter at a time. Everyone else can see the letters so far.",
+    "Think you know it? Give the room a CLUE — never the word itself. If someone else reads the same word out of your clue, you both tap \"I've got a contact\", count 3-2-1 and say it together.",
+    "The holder can BLOCK by naming the word being signalled first. If it's too close to call, the pair wins — the holder doesn't get to stall.",
+    "150 each to a pair who land it, 150 to the holder for a clean block or for running the word all the way out.",
+  ],
+  centre_stage: [
+    "Everyone performs once, in turn — you get a card telling you what the act is, and a minute on the clock.",
+    "Everyone else rates it 1 to 5 while you're going. Rate COMMITMENT, not talent — nobody here can sing and that's not what's being scored.",
+    "At the reveal every rating shows with the name of whoever gave it. No hiding behind an average.",
+    "40 points per star. Going all-in on something stupid is the whole strategy.",
+  ],
+  speed_cards: [
+    "This one's a real deck of cards on a real table — the app just runs the clock and keeps score.",
+    "Each hand comes with a house twist (silent hand, left hand only, standing up). Play whatever shedding game the room knows, faster than usual.",
+    "Shed your hand FIRST and you take the most points. The host taps people in as they go out.",
   ],
 };

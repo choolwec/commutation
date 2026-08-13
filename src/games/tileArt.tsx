@@ -40,6 +40,17 @@ export const TILE_ACCENT: Record<string, string> = {
   best_answer: "#ec4899",
   buzz_in_trivia: "#22d3ee",
   buzz_in_music: "#a855f7",
+  // 📱 Huddle — the group's own rounds (docs/THEIR_ROUNDS.md). Each matches
+  // the ACCENT constant its own module renders with, same rule as above.
+  act_it_out: "#e11d48",
+  thirty_seconds: "#14b8a6",
+  spell_it_out: "#cbd5e1",
+  survey_says: "#3b82f6",
+  question_volley: "#0ea5e9",
+  clap_circle: "#f59e0b",
+  contact: "#facc15",
+  centre_stage: "#d946ef",
+  speed_cards: "#059669",
 };
 
 const motifs: Record<string, ReactNode> = {
@@ -166,6 +177,88 @@ const motifs: Record<string, ReactNode> = {
       <circle cx="50" cy="50" r="24" stroke="currentColor" strokeWidth="2" opacity="0.5" fill="none" />
       <circle cx="50" cy="50" r="14" stroke="currentColor" strokeWidth="2" opacity="0.5" fill="none" />
       <circle cx="50" cy="50" r="5" fill="currentColor" opacity="0.9" />
+    </>
+  ),
+
+  // ── the group's own rounds ────────────────────────────────────────────
+  // A theatre mask, mirrored — the two halves of Opposite Day.
+  act_it_out: (
+    <>
+      <path d="M14 26h30v28a15 15 0 01-30 0z" fill="currentColor" opacity="0.85" />
+      <path d="M56 26h30v28a15 15 0 01-30 0z" fill="currentColor" opacity="0.4" />
+      <circle cx="24" cy="40" r="3.5" fill="var(--color-ink)" />
+      <circle cx="34" cy="40" r="3.5" fill="var(--color-ink)" />
+      <circle cx="66" cy="40" r="3.5" fill="var(--color-ink)" />
+      <circle cx="76" cy="40" r="3.5" fill="var(--color-ink)" />
+    </>
+  ),
+  // A stopwatch, half elapsed.
+  thirty_seconds: (
+    <>
+      <circle cx="50" cy="56" r="30" stroke="currentColor" strokeWidth="5" opacity="0.8" fill="none" />
+      <path d="M50 56V32" stroke="currentColor" strokeWidth="5" strokeLinecap="round" opacity="0.95" />
+      <path d="M50 56l18 10" stroke="currentColor" strokeWidth="5" strokeLinecap="round" opacity="0.95" />
+      <rect x="42" y="12" width="16" height="8" rx="3" fill="currentColor" opacity="0.9" />
+    </>
+  ),
+  // Chalk letters ruled onto a slate.
+  spell_it_out: (
+    <>
+      <line x1="16" y1="70" x2="84" y2="70" stroke="currentColor" strokeWidth="3" opacity="0.35" />
+      <path d="M22 62V34h12a9 9 0 010 18H22" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.9" />
+      <path d="M46 62V34h16M46 48h12" stroke="currentColor" strokeWidth="6" strokeLinecap="round" fill="none" opacity="0.7" />
+      <path d="M72 34v28h12" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.5" />
+    </>
+  ),
+  // A Feud board — panels flipping up, biggest answer on top.
+  survey_says: (
+    <>
+      <rect x="14" y="18" width="72" height="16" rx="4" fill="currentColor" opacity="0.9" />
+      <rect x="14" y="42" width="54" height="16" rx="4" fill="currentColor" opacity="0.6" />
+      <rect x="14" y="66" width="34" height="16" rx="4" fill="currentColor" opacity="0.35" />
+    </>
+  ),
+  // A rally — the ball crossing back and forth.
+  question_volley: (
+    <>
+      <path d="M14 66Q50 12 86 66" stroke="currentColor" strokeWidth="5" strokeDasharray="8 7" fill="none" opacity="0.6" />
+      <circle cx="14" cy="66" r="8" fill="currentColor" opacity="0.9" />
+      <circle cx="86" cy="66" r="8" fill="currentColor" opacity="0.9" />
+      <circle cx="50" cy="30" r="6" fill="currentColor" />
+    </>
+  ),
+  // A clap: two hands meeting, with the impact ringing off them.
+  clap_circle: (
+    <>
+      <path d="M40 74V38a6 6 0 0112 0v22" stroke="currentColor" strokeWidth="6" strokeLinecap="round" fill="none" opacity="0.9" />
+      <path d="M52 60V34a6 6 0 0112 0v34" stroke="currentColor" strokeWidth="6" strokeLinecap="round" fill="none" opacity="0.6" />
+      <path d="M22 30l-8-8M32 20l-3-10M14 46H4" stroke="currentColor" strokeWidth="5" strokeLinecap="round" opacity="0.8" />
+      <path d="M78 30l8-8M68 20l3-10M86 46h10" stroke="currentColor" strokeWidth="5" strokeLinecap="round" opacity="0.8" />
+    </>
+  ),
+  // Letter tiles, the last still dark.
+  contact: (
+    <>
+      <rect x="10" y="36" width="24" height="28" rx="4" fill="currentColor" opacity="0.9" />
+      <rect x="38" y="36" width="24" height="28" rx="4" fill="currentColor" opacity="0.55" />
+      <rect x="66" y="36" width="24" height="28" rx="4" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.4" />
+    </>
+  ),
+  // A microphone caught in a spotlight cone.
+  centre_stage: (
+    <>
+      <path d="M28 12L50 52 72 12z" fill="currentColor" opacity="0.16" />
+      <rect x="42" y="30" width="16" height="30" rx="8" fill="currentColor" opacity="0.9" />
+      <path d="M32 54a18 18 0 0036 0" stroke="currentColor" strokeWidth="5" strokeLinecap="round" fill="none" opacity="0.8" />
+      <line x1="50" y1="72" x2="50" y2="86" stroke="currentColor" strokeWidth="5" strokeLinecap="round" opacity="0.8" />
+    </>
+  ),
+  // A fanned hand of cards.
+  speed_cards: (
+    <>
+      <rect x="18" y="30" width="30" height="44" rx="5" fill="currentColor" opacity="0.35" transform="rotate(-16 33 52)" />
+      <rect x="35" y="26" width="30" height="44" rx="5" fill="currentColor" opacity="0.6" />
+      <rect x="52" y="30" width="30" height="44" rx="5" fill="currentColor" opacity="0.9" transform="rotate(16 67 52)" />
     </>
   ),
 };
