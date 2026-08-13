@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
+import { getSupabase } from "@/lib/supabase/client";
 import type { GameModule } from "@/lib/game/types";
 import { GameShell, GhostButton, PrimaryButton, WaitingOnHost } from "@/components/play/GameShell";
 
@@ -24,7 +26,53 @@ import { GameShell, GhostButton, PrimaryButton, WaitingOnHost } from "@/componen
  * spotlight around the question, everything else recedes to near-black —
  * and the host's decision plays out as an actual flipping coin before the
  * round updates, so the moment has weight instead of just being a tap.
+ *
+ * SYNCED FLIP: the coin used to be local useState on whichever phone tapped
+ * the button — it animated there, then the RPC call updated round.phase for
+ * everyone else, who never saw a flip at all. Fixed by broadcasting the
+ * flip itself as a round_events row (kind: 'coin_flip', migration 0008 —
+ * the same "everyone needs this the instant it happens" primitive Buzz In
+ * uses for who-buzzed-first) instead of driving the animation off local
+ * click state. Every phone, including the host's, renders the flip from
+ * useCoinFlip() below, so all six land on the same frame together. The
+ * host still owns the outcome and the follow-up RPC call, just delayed
+ * until after the shared animation plays out.
  */
+
+const FLIP_MS = 900;
+
+/**
+ * Every phone (host included) renders the flip off the same broadcast row,
+ * timed against the event's own server timestamp — same reasoning as
+ * RoundTimer.tsx reading from round.started_at instead of a local clock,
+ * so a phone that was mid-render when the event arrived still lands on the
+ * right frame instead of getting a full fresh FLIP_MS window late.
+ */
+function useCoinFlip(): "reveal" | "secret" | null {
+  const { events } = useRoom();
+  const [flipping, setFlipping] = useState<"reveal" | "secret" | null>(null);
+
+  const latest = events.filter((e) => e.kind === "coin_flip" && e.idx === 0).at(-1);
+  const latestId = latest?.id ?? null;
+
+  useEffect(() => {
+    if (!latest || (latest.value !== "reveal" && latest.value !== "secret")) return;
+
+    // A late joiner re-fetching events shouldn't replay a flip that already
+    // resolved.
+    const remaining = FLIP_MS - (Date.now() - new Date(latest.created_at).getTime());
+    if (remaining <= 0) return;
+
+    const value = latest.value as "reveal" | "secret";
+    const apply = () => setFlipping(value);
+    apply();
+    const t = setTimeout(() => setFlipping(null), remaining);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestId]);
+
+  return flipping;
+}
 
 const PARANOIA_QUESTIONS: string[] = [
   "Who here would be the easiest to talk into a bad idea?",
@@ -94,29 +142,40 @@ function CoinFlip({ landing }: { landing: "reveal" | "secret" }) {
 }
 
 function Phone() {
+  const { me } = usePlayer();
   const { round, isHost, call } = useRoom();
   const item = useCurrentItems()[0];
-  const [flipping, setFlipping] = useState<"reveal" | "secret" | null>(null);
+  const flipping = useCoinFlip();
 
   const isRecipient = Boolean(item && item.visible_to !== null);
   const isPublic = Boolean(item && item.visible_to === null);
   const done = round?.phase === "done";
 
+  async function broadcastFlip(landing: "reveal" | "secret") {
+    const supabase = getSupabase();
+    if (!supabase || !round || !me) return;
+    await supabase.from("round_events").insert({
+      round_id: round.id,
+      idx: 0,
+      player_id: me.id,
+      kind: "coin_flip",
+      value: landing,
+    });
+  }
+
   async function doReveal() {
     if (!round) return;
-    setFlipping("reveal");
-    await new Promise((r) => setTimeout(r, 900));
+    await broadcastFlip("reveal");
+    await new Promise((r) => setTimeout(r, FLIP_MS));
     await call("reveal_item", { p_round: round.id, p_idx: 0 });
     await call("set_phase", { p_round: round.id, p_phase: "reveal" });
-    setFlipping(null);
   }
 
   async function doSecret() {
     if (!round) return;
-    setFlipping("secret");
-    await new Promise((r) => setTimeout(r, 900));
+    await broadcastFlip("secret");
+    await new Promise((r) => setTimeout(r, FLIP_MS));
     await call("set_phase", { p_round: round.id, p_phase: "done" });
-    setFlipping(null);
   }
 
   if (!round) {
