@@ -13,8 +13,10 @@ import { TRUTHS, DARES } from "@/config/decks";
  * Content ships as one shuffled deck dealt in a single deal_deck() call
  * (0007) — each item carries {kind, tier} in `meta`, which deal_deck stores
  * as-is. No survey content needed; decks.ts already covers this game, per
- * the brief. use_pass() (0009) is the one genuinely self-service write in
- * the whole app: a player spending their own pass doesn't need the host.
+ * the brief. pass_and_advance() (0012) is the one genuinely self-service
+ * write in the whole app: a player spending their own pass doesn't need the
+ * host, and it advances the shared card itself (not just the point spend —
+ * see 0012's header for why use_pass() alone wasn't enough).
  *
  * VISUAL IDENTITY: the screen itself escalates. The accent color and the
  * background glow intensify tier over tier (amber → orange → deep red),
@@ -129,7 +131,7 @@ function Phone() {
     if (!round) return;
     setPassMsg(null);
     try {
-      await call("use_pass", { p_round: round.id });
+      await call("pass_and_advance", { p_round: round.id });
     } catch (e) {
       setPassMsg(e instanceof Error ? e.message : "couldn't use a pass");
     }
