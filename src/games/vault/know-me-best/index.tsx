@@ -131,20 +131,28 @@ function GuessBox({ idx }: { idx: number }) {
 }
 
 function RevealPanel({ idx }: { idx: number }) {
-  const { roster } = usePlayer();
+  const { me, roster } = usePlayer();
   const { round, secrets, submissions, isHost, call } = useRoom();
   const secret = secrets.find((s) => s.idx === idx);
   const guesses = submissions.filter((s) => s.idx === idx && s.kind === "guess");
   const realAnswer = (secret?.payload as { value?: string } | undefined)?.value;
+  const isSubject = Boolean(me && round?.subject === me.id);
 
+  // The subject knows the nuance of their own answer best, so they get to
+  // award too (award_closest_guess, 0013) — not just the host (award_points,
+  // still works as a fallback if the subject's phone is the problem).
   async function award(playerId: string) {
     if (!round) return;
-    await call("award_points", {
-      p_player: playerId,
-      p_points: 100,
-      p_reason: "closest_guess",
-      p_round: round.id,
-    });
+    if (isSubject) {
+      await call("award_closest_guess", { p_round: round.id, p_player: playerId });
+    } else {
+      await call("award_points", {
+        p_player: playerId,
+        p_points: 100,
+        p_reason: "closest_guess",
+        p_round: round.id,
+      });
+    }
   }
 
   return (
@@ -190,7 +198,7 @@ function RevealPanel({ idx }: { idx: number }) {
         </div>
       </div>
 
-      {isHost && guesses.length > 0 && (
+      {(isHost || isSubject) && guesses.length > 0 && (
         <div>
           <p style={MONO} className="mb-2 text-center text-[10px] uppercase tracking-[0.25em] text-mute">
             closest guess? tap to award 100
@@ -293,7 +301,9 @@ function Phone() {
       </div>
 
       <div className="mt-8">
-        {isSubject ? (
+        {revealed ? (
+          <RevealPanel idx={cursor} />
+        ) : isSubject ? (
           <div className="rise rounded-2xl border border-dashed border-gold/40 px-4 py-6 text-center">
             <p style={MONO} className="text-[10px] uppercase tracking-[0.3em] text-gold">
               access restricted
@@ -303,10 +313,8 @@ function Phone() {
               guessing what you said.
             </p>
           </div>
-        ) : !revealed ? (
-          <GuessBox idx={cursor} />
         ) : (
-          <RevealPanel idx={cursor} />
+          <GuessBox idx={cursor} />
         )}
       </div>
     </GameShell>
