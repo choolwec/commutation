@@ -7,9 +7,11 @@ without knowing why they're there.
 
 **Snapshot taken:** Sun 9 Aug 2026, evening; **updated Wed 12 Aug 2026** when
 Stage 2 was built (see §12); **updated again night of 13→14 Aug 2026** for an
-overnight autonomous polish pass (see §13). If it's later than that, treat
-anything time-sensitive below (survey counts, "not yet built") as stale and
-re-verify rather than trust it.
+overnight autonomous polish pass (see §13); **updated again 14 Aug 2026** when
+the group's own twelve invented rounds were finally built (see §14 — the game
+count is now **25**, not 16). If it's later than that, treat anything
+time-sensitive below (survey counts, "not yet built") as stale and re-verify
+rather than trust it.
 
 ---
 
@@ -21,9 +23,10 @@ drinking) on **Saturday 15 Aug 2026, 13:00–20:00**.
 
 - **Stage 1** (info hub + a private, sealed survey) — **built, live, verified.**
 - **Stage 2** (a synced multiplayer game console that unlocks automatically
-  at 13:00 Saturday) — **built, 16 games, not yet dress-rehearsed.** Full
+  at 13:00 Saturday) — **built, 25 games, not yet dress-rehearsed.** Full
   original design in [PLAN.md](PLAN.md); what actually got built, and where
-  it diverges, is §12.
+  it diverges, is §12 (the first 16) and §14 (the nine the group invented
+  themselves, from [THEIR_ROUNDS.md](THEIR_ROUNDS.md)).
 
 The whole point of the survey: real confessions, hot takes, and predictions
 from the group become the content for Stage 2's games (`Who Wrote It?`,
@@ -704,3 +707,156 @@ Choolwe 39, Chileleko 20, Joy 7 (submitted), Latasha 39, Niza 65
 yet. `game_room`: `host_player = 'choolwe'`, `unlocked_at = null`,
 `active_round = null` — the real Vault is untouched and still locked, as
 it should be until Saturday.
+
+---
+
+## 14. Their rounds — the group's own twelve, built (14 Aug 2026)
+
+The work §13 explicitly deferred as "P4": turning
+[THEIR_ROUNDS.md](THEIR_ROUNDS.md) — survey section 7's twelve "invent a
+round" answers, spec'd by an isolated subagent per §2 — into real games.
+**Nine new `GameModule`s, taking the app from 16 games to 25.** Same branch
+(`overnight-polish`), still nothing on `master`.
+
+Read THEIR_ROUNDS.md first if you're picking this up: it's the spec these were
+built against and it records every resolution Choolwe made on 12 Aug. It now
+carries a STATUS banner pointing back here.
+
+### What shipped
+
+| Spec | Game | Hall | The mechanic in one line |
+|---|---|---|---|
+| §1.1 | **Act It Out** | huddle | Charades, except ~2 cards in 5 come up OPPOSITE DAY and you act the inverse of your word |
+| §1.2 | **Spell It Out** | huddle | A spelling bee with no turns and no elimination — one reader, everyone spells at once |
+| §1.3 | **Survey Says** | huddle | Six-person Family Feud: you score by matching other people in the room, not by being right |
+| §2.3 | **Contact** | huddle | Letter-by-letter reveal, clue someone into the word, holder can block |
+| §2.5 | **30 Seconds** | huddle | Five words, half a minute, can't say any of them |
+| §3.1 | **Speed Cards** | huddle | Physical deck; the app is a clock, a house twist and a ledger |
+| §3.2 | **Clap Circle** | huddle | One clap passes, two reverses, three skips; miss yours and you're out |
+| §3.3 | **Centre Stage** | huddle | Everyone performs once, everyone rates 1-5, ratings shown per rater |
+| §3.4 | **Question Volley** | huddle | Never answer — ask the next person instead, three seconds or you're caught |
+| §2.1 | *(not a new game)* | vault | A **forfeit** is now the last card of every Truth or Dare deck |
+
+All nine carry `origin: "group"` on their module, which is the only thing the
+Launcher groups on — they render under a **"🧠 Your Rounds"** heading inside
+the Huddle tab, so on the day the room can see that a third of the schedule
+came out of their own answers. Whose idea each one was stays sealed; that
+reveal is the payoff, per THEIR_ROUNDS' own header.
+
+**Not built, deliberately, both because the spec said not to:** §2.4 (the
+secret-role elimination idea — it's Mafia by name with no distinguishing
+twist, and Mafia already shipped from a direct request) and §3.5 (the
+unidentified playground game — run it verbally). §2.2's audio round needed
+nothing: Buzz In: Name That Tune already covers it, and it already streams
+from iTunes rather than committing copyrighted clips to this public repo,
+which is exactly the fallback §4.1 recommended.
+
+### New migrations: 0015 and 0016
+
+Applied with `node scripts/migrate.mjs`, verified with throwaway attack-style
+scripts (deleted once green, per §8's convention), and `npm run check:engine`
+re-run after each.
+
+| File | What it adds |
+|---|---|
+| `0015_their_rounds_primitives.sql` | `normalise_answer` (one shared definition of "same answer"), `score_exact` (pays everyone who typed the sealed answer), `score_agreement` (§1.3 asked for this by name — pays 100 × (group size − 1)), `deal_private_answers` (an accept-list, so a synonym doesn't cost a point), `set_round_config` (host-only shallow merge into `rounds.config`) |
+| `0016_forfeits_and_contact.sql` | `deal_forfeit` / `reroll_forfeit` (§2.1), `contact_reveal_letter` (§2.3) |
+
+`ContentSource` gained a fifth variant, `{ kind: "private" }`, exactly as
+THEIR_ROUNDS §0 asked.
+
+### Two judgement calls worth knowing about
+
+**§2.1's eligibility filter could not be built as specified.** The spec wanted
+`deal_forfeit()` to read an eligibility attribute "from sealed survey data
+inside the definer function" so a forfeit that doesn't fit its target is never
+dealt. There is no such data: `src/config/survey.ts` has no question about
+relationship status, siblings or living parents, and three of the six had
+already sealed their survey, so adding one wasn't available either.
+
+The requirement was kept and the check moved to the only place the answer
+exists — the recipient's own head. Every forfeit carries a `needs` line shown
+to the one phone it was dealt to, and that phone can swap it for another
+(`reroll_forfeit`) with **no public trace at all**: no event, no score, no
+config write, so a re-roll is indistinguishable from having been dealt that
+card in the first place. That beats the alternative the spec itself warned
+against — a public column on `players` would broadcast a private fact to the
+whole room. Which *person* gets it is still drawn by Postgres, as specified.
+Full reasoning is in `0016`'s header; read it before changing this.
+
+**A real bug found while verifying, unrelated to P4 but far more serious.**
+`src/lib/useNow.ts` passed `() => Date.now()` as `useSyncExternalStore`'s
+getSnapshot. React compares snapshots with `Object.is` on every render to
+decide whether to re-render, so a fresh number every call reports "changed"
+every time — an unbounded render loop ending in *"Maximum update depth
+exceeded"*. Its only caller is `RoomProvider`, which every phone in `/play`
+and `/tv` sits inside all day. **This would have taken the whole game console
+down on Saturday.**
+
+It survived §13's screenshot pass because `/preview` — and therefore
+`npm run shots` — mocks `RoomContext` directly instead of mounting
+`RoomProvider`. The one screen in the app that never renders that hook is the
+screen the UI was being reviewed on. Fixed by reading the clock only on the
+interval tick, into a ref. The lesson is in the file's own comment: `/preview`
+is not a substitute for loading a real page.
+
+### Getting out of a round
+
+An active round used to be a trap — `PlayRoom` renders the round instead of
+the picker for everybody, and the only way back was the host clicking through
+to the end of whatever was running. `GameShell` now carries a **✕** next to
+the "?", which reaches all 25 games at once:
+
+- **"Back to the games list"** — local to one phone, via the new
+  `ExitContext` (`src/components/play/ExitContext.tsx`). The round carries on
+  for everyone else, and a "still going" bar above the tab bar rejoins in one
+  tap. The left-round is stored as an id, not a boolean, so starting the next
+  game automatically pulls everyone back in.
+- **"End this round for everyone"** — host only, two taps to confirm. Just
+  `set_phase(done)`, which was already `assert_host()`-gated.
+
+`/test` has the same escape hatch and its own rejoin bar.
+
+### Rules sheet, changed
+
+- **Once per device, ever, not once per tab session.** It was keyed on
+  `sessionStorage`, which Safari resets when a tab closes or gets evicted —
+  across a seven-hour day that means the sheet reappearing in front of games
+  people already know. Now `localStorage`, wrapped in try/catch for
+  private-mode Safari.
+- **Three ways out, and it can't trap you.** A ✕ in the corner (44px, always
+  visible), "Got it" pinned to the bottom, the backdrop, and Escape. The sheet
+  is now a flex column capped at `85dvh` with the rules scrolling between a
+  fixed header and footer — without that, a four-line entry (Contact,
+  Spyfall, 30 Seconds) grew past the bottom of a small iPhone and pushed "Got
+  it" off-screen with nothing to scroll.
+
+### Verified, and how
+
+`npx tsc --noEmit`, `npm run lint`, `npm run build` (all 11 routes prerender)
+and `npm run check:engine` (18 checks) pass clean at the tip.
+
+More usefully: a throwaway Playwright script drove **every one of the ten
+touched games through the real `/test` flow in a real browser** — each
+module's actual `start()` against the actual database, asserting the round was
+created, tagged `is_test`, dealt the right number of item slots, dealt the
+right ones privately, and threw nothing in the browser. It also checked the
+rules-sheet contract and the whole leave / rejoin / end-round flow. Same
+throwaway-seventh-profile pattern `check-engine.mjs` uses, restoring
+`game_room` exactly and never touching the six real profiles or `unlocked_at`.
+Deleted once green — but it's the single highest-value thing to rebuild if a
+future session adds a game, because it is what caught the `useNow` loop.
+
+`npm run shots` gained three permanent shots — the "Your Rounds" section of
+the picker, a mid-round Clap Circle (the seat ring is the widest new layout
+and the likeliest to break at 393px), and the exit sheet.
+
+### Still open
+
+- **Real six-tab dress rehearsal on real iPhones** — still the bar, still not
+  done. It matters more now at 25 games than it did at 16.
+- **Content decks are hand-written and unplayed.** `src/config/their-rounds.ts`
+  holds all of it. Worth a skim before Saturday, particularly `FORFEITS` —
+  every one of those cards asks somebody to ring a real person.
+- **Bypass code** still the Wed-12-Aug placeholder. **Real venue address**
+  still pending. Both from §13, both unchanged.

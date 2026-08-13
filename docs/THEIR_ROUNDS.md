@@ -1,5 +1,14 @@
 # THEIR ROUNDS — final build spec
 
+> **STATUS: BUILT, 14 Aug 2026.** All nine buildable rounds below now exist as
+> real `GameModule`s on branch `overnight-polish` — see [HANDOFF.md](HANDOFF.md)
+> §14 for what shipped, what deviated from this spec and why. The two the spec
+> itself said not to build (§2.4 Mafia, §3.5 the playground game) were not
+> built, and §2.2's audio round was already covered by Buzz In: Name That Tune.
+> Everything below is kept as written — it's the record of what was decided
+> and why, not a to-do list any more. Where the build diverged, the reasoning
+> is in the relevant migration header or game file, not here.
+
 The twelve free-text "invent a round" answers, turned into a spec ready to
 implement as `GameModule`s against `src/games/registry.ts`. Every ambiguity
 has been resolved by the host (Choolwe) as of 12 Aug 2026.
