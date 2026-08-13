@@ -14,6 +14,18 @@ import { NEVER_HAVE_I_EVER } from "@/config/decks";
  * OWN vote (everyone else's is sealed until `show_votes` flips), so the
  * honest UI is "locked in" pre-reveal and a real tally only once the host
  * opens it, same shape as every other vote-based game here.
+ *
+ * DELIBERATELY UNSCORED (P2 decision, not an oversight — award_points is
+ * never called anywhere in this file). Every other vote-based game in the
+ * app scores toward *guessing something correctly* — this one has no
+ * correct answer, only an honest one. Attaching points to "I have" would
+ * push exactly the wrong incentive for a talking-point/oversharing game:
+ * people downplaying real answers to protect their score, which is the
+ * opposite of what makes this game work. A "room can challenge an answer"
+ * mechanic was considered and deliberately skipped for the same reason
+ * this game earns its keep by staying simple and fast — it would need a
+ * new dispute/adjudication flow for a feature that cuts against the
+ * game's actual point (honesty, not correctness).
  */
 
 type Tier = "warm" | "real" | "reckless";
