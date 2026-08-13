@@ -36,6 +36,20 @@ const nextConfig: NextConfig = {
    * root later means unsetting one variable rather than editing code.
    */
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || undefined,
+
+  /**
+   * `next dev` refuses cross-origin requests for its own JS chunks by
+   * default (a DNS-rebinding protection) — fine normally, but it silently
+   * 403s every `_next/static/chunks/*.js` request the moment the dev
+   * server is reached through anything other than localhost: a phone on
+   * the LAN, an ngrok/cloudflared tunnel, etc. The page's HTML still
+   * loads, so it *looks* like the app is hanging (stuck on the loading
+   * spinner) when actually the React bundle itself never arrived.
+   * Wildcarded so it covers the LAN IP, any trycloudflare.com tunnel used
+   * to test on a real phone, and localhost itself. Dev-only — this option
+   * does nothing in a production/static-export build.
+   */
+  allowedDevOrigins: ["*.trycloudflare.com", "172.20.10.*", "localhost"],
 };
 
 export default nextConfig;

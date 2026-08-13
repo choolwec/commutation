@@ -62,17 +62,33 @@ export const EVENT = {
   ],
 
   /**
-   * Secret bypass code — force-unlocks the games early if plans shift.
-   * Use it at /unlock. Change this; don't tell anyone.
+   * The bypass code used to live here as a plaintext string — but this repo
+   * is public (GitHub Pages, see HANDOFF §4), so anything in this file is
+   * anyone's to read. It's now a value in the `room_secrets` table, which
+   * has RLS on and NO select policy, checked only inside the
+   * `unlock_with_code()` Postgres function. See supabase/migrations/0006 and
+   * 0007. Set or change it directly in the SQL editor:
+   *
+   *   insert into room_secrets (key, value) values ('bypass_code', 'xxx')
+   *     on conflict (key) do update set value = excluded.value;
+   *
+   * Never put the value in a file that gets committed.
    */
-  bypassCode: "letmein",
 
   /** Survey answer deadline, shown as gentle pressure on the hub. */
-  surveyClosesAt: new Date(2026, 7, 12, 23, 59, 0),
-  surveyClosesLabel: "Tuesday night",
+  surveyClosesAt: new Date(2026, 7, 14, 23, 59, 0),
+  surveyClosesLabel: "Friday night",
 } as const;
 
-/** True once the countdown has run out (or the bypass has been used). */
+/**
+ * True once THIS DEVICE's clock says the countdown has run out.
+ *
+ * Fine for display — the hub's countdown ring, "starts in 2h" copy. NOT the
+ * source of truth for actually opening the Vault: six phones can disagree
+ * about the time, so the games gate on `game_room.unlocked_at` in Postgres
+ * instead (see src/lib/game/room.tsx's `unlocked`), set by whichever device
+ * first calls `open_room_if_due()` after the server's own clock agrees.
+ */
 export function isUnlocked(now: Date = new Date()): boolean {
   return now.getTime() >= EVENT.unlocksAt.getTime();
 }

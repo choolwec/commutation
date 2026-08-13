@@ -38,6 +38,7 @@ yarn-error.log*
 /.shots/
 dev.log
 dev.err.log
+cloudflared.log
 
 # vercel
 .vercel

@@ -5,9 +5,13 @@ Read this whole file before touching anything — several mistakes were made
 and fixed along the way, and the fixes only hold if you don't undo them
 without knowing why they're there.
 
-**Snapshot taken:** Sun 9 Aug 2026, evening. If it's later than that, treat
-anything time-sensitive below (survey counts, "not yet built") as stale and
-re-verify rather than trust it.
+**Snapshot taken:** Sun 9 Aug 2026, evening; **updated Wed 12 Aug 2026** when
+Stage 2 was built (see §12); **updated again night of 13→14 Aug 2026** for an
+overnight autonomous polish pass (see §13); **updated again 14 Aug 2026** when
+the group's own twelve invented rounds were finally built (see §14 — the game
+count is now **25**, not 16). If it's later than that, treat anything
+time-sensitive below (survey counts, "not yet built") as stale and re-verify
+rather than trust it.
 
 ---
 
@@ -19,7 +23,10 @@ drinking) on **Saturday 15 Aug 2026, 13:00–20:00**.
 
 - **Stage 1** (info hub + a private, sealed survey) — **built, live, verified.**
 - **Stage 2** (a synced multiplayer game console that unlocks automatically
-  at 13:00 Saturday) — **not started.** Full design in [PLAN.md](PLAN.md).
+  at 13:00 Saturday) — **built, 25 games, not yet dress-rehearsed.** Full
+  original design in [PLAN.md](PLAN.md); what actually got built, and where
+  it diverges, is §12 (the first 16) and §14 (the nine the group invented
+  themselves, from [THEIR_ROUNDS.md](THEIR_ROUNDS.md)).
 
 The whole point of the survey: real confessions, hot takes, and predictions
 from the group become the content for Stage 2's games (`Who Wrote It?`,
@@ -300,18 +307,38 @@ in the working tree, that's expected — they were throwaway by design.
   "Seal it" (submitted) yet.
 - **`SUPABASE_SERVICE_ROLE_KEY`** is in `.env.local`, verified working,
   not yet used for anything beyond that verification.
-- **Stage 2:** not started. Deliberately — the plan is to wait for more
-  survey data before running the content-tiering subagent (see §2), and to
-  start the actual game-console build midweek (per PLAN.md: Wed–Fri, dress
-  rehearsal Friday night, unlock fires Sat 13:00).
+- **Stage 2:** built Wed 12 Aug — engine, all 16 games, `/play`, `/tv`,
+  Evidence, Awards. Not yet dress-rehearsed on real devices. See §12.
+- **`SUPABASE_DB_URL`** is now in `.env.local` too (added Wed 12 Aug, needed
+  to run migrations directly — see §12's note on `scripts/migrate.mjs`).
+  Same rule as the service-role key: this one, never committed, never a
+  GitHub Actions secret.
 
 **Choolwe's outstanding to-dos** (not something to do for him without
 asking, but worth surfacing if picking this up mid-week):
 - Real venue address, once confirmed — `src/config/event.ts`, plus flip
   `location.pending` to `false`.
-- Change `bypassCode` from `"letmein"` — and per §6, move it out of a public
-  source file entirely before `/unlock` is built to consume it.
-- Nudge Chileleko, Joy, Latasha — currently zero answers each.
+- ~~Change `bypassCode` from `"letmein"`~~ — done Wed 12 Aug: it's out of
+  the public repo entirely now, living only in the `room_secrets` table
+  (§12). A placeholder value was set so the unlock flow has something to
+  test against; **change it to something only you know** before Saturday —
+  SQL editor: `update room_secrets set value = 'xxx' where key =
+  'bypass_code';`. Nobody else who's read this file knows what the
+  placeholder currently is.
+- Nudge Chileleko, Joy, Latasha — as of Wed 12 Aug they'd caught up
+  (39/20/39 answers respectively, all six profiles claimed) — re-verify
+  with a fresh count query rather than trusting this.
+- **Friday morning, once the survey is actually closed (not before —
+  people are still answering as of Wed 12 Aug):** have an isolated
+  background subagent (per §2 — never the main conversation thread) go
+  through every submitted answer and standardize formatting — consistent
+  capitalization, trimmed whitespace, stray punctuation — so what shows up
+  in-game Saturday reads cleanly. This is a WRITE to `survey_responses`,
+  unlike everything else that pattern has been used for so far (which only
+  ever read); treat it with the same caution as `reset.mjs` gets in §8 —
+  dry-run it first (report what it *would* change, counts only, before
+  touching anything), and don't let it run unsupervised. Requested by
+  Choolwe on 12 Aug; deliberately not done yet.
 
 ---
 
@@ -328,3 +355,508 @@ asking, but worth surfacing if picking this up mid-week):
 5. For any Stage 2 work that needs to read real survey content (tiering,
    interpreting invented rounds), do it via an isolated background
    subagent per §2 — not in the main conversation thread.
+6. If Stage 2 exists (check for `src/games/`), also run `npm run
+   check:engine` and read §12 before touching any game.
+
+---
+
+## 12. Stage 2 — what actually got built (Wed 12 Aug)
+
+Built in one session, three days out from Saturday: the whole engine, all
+16 games, `/play`, `/tv`, Evidence, Awards. Everything below is real and
+verified — `npx tsc --noEmit`, `npm run lint`, `npm run build` (static
+export, all 10 routes prerender), `npm run check`, and `npm run
+check:engine` all pass as of this writing. **What hasn't happened yet: a
+real six-tab dress rehearsal, and testing on an actual iPhone.** PLAN.md's
+verification checklist for Stage 2 is still the bar to clear before
+Saturday — nothing below substitutes for it.
+
+### Schema — migrations 0005 through 0011
+
+Same rule as §5: run in order, don't skip around. Unlike 0001–0004 (pasted
+into the SQL editor by hand), these were applied with `node
+scripts/migrate.mjs <file>` — a real script, one transaction per file, so a
+failure rolls back instead of half-applying like 0003 did. Needs
+`SUPABASE_DB_URL` in `.env.local` (see §6). `node scripts/migrate.mjs
+--all` runs every migration in the folder in order; safe to re-run, every
+statement in every file is idempotent.
+
+| File | What it does |
+|---|---|
+| `0005_game_engine.sql` | Core tables: `game_room` (one row, singleton), `room_secrets` (RLS on, zero SELECT policies — unreadable through the API by construction), `rounds`, `round_items`, `round_secrets`, `submissions`, `votes`, `scores`, the `leaderboard` view. This is where the privacy shape lives: content and authorship are separate tables with separate RLS, so "who wrote it" is unreadable until a round's `phase` says otherwise — not by convention, by Postgres refusing the query, same discipline as Stage 1's `survey_responses`. |
+| `0006_game_rpcs.sql` | Every mutation is a `SECURITY DEFINER` function that checks who's asking before doing anything — no table has an INSERT/UPDATE policy for players directly. `start_round`, `deal_from_survey` (the only thing in the whole system allowed to read `survey_responses.value` — never granted to a client, only callable from inside `start_round`), `set_phase`/`set_cursor`/`set_reveal`, `submit_answer`, `cast_vote`, `score_item`/`score_plurality`, `open_room_if_due`/`unlock_with_code` (the bypass code, checked server-side against `room_secrets`). |
+| `0007_decks_and_evidence.sql` | Standalone games that don't need the survey at all: `deal_deck` (host's device supplies content, e.g. Spyfall locations), `deal_roles` (the odd-one-out primitive — Postgres draws who gets the different card, so the drawing device can never be the one who knows), `deal_private`, `award_points`, `start_deck_round`, `score_odd_one_out`. Plus Evidence: `evidence_prompts`/`evidence_photos` tables, `schedule_evidence` (lays out the whole day's random photo prompts in one call), `complete_evidence`, and a public-read `evidence` Storage bucket. |
+| `0008_more_primitives.sql` | Three gaps found while actually building the games (see the file's own header for the reasoning): `deal_hidden_answer` (Know Me Best — question public, real answer sealed, which `deal_from_survey` couldn't do because it couples the two), `reveal_item` (Paranoia's coin flip — the only way a privately-dealt card can become public), and `round_events` + `seed_truth_submission` (Buzz In needs "who buzzed first" visible to everyone *instantly*, the opposite of how submissions/votes work; Fibbage/Drawful need a "true answer" option indistinguishable from real submissions, solved by letting a submission have no author). |
+| `0009_pass_tokens.sql` | `use_pass()` — the only self-service write against `scores`. Truth or Dare's 2-passes-a-day economy; every other point comes from a host-gated function. |
+| `0010_fix_lobby_default.sql` | One-line fix: `rounds.phase` defaulted to `'lobby'`, but none of the 16 games' `start()` functions transition out of it, and `submit_answer`/`cast_vote` only accept `phase in ('play','vote')`. Every round would have rejected its first tap. Changed the column default to `'play'` rather than editing sixteen call sites that were all written assuming a fresh round was immediately playable. |
+| `0011_test_mode.sql` | `rounds.is_test`, `deal_test_pair`/`deal_test_hidden` (fake content only, never reads `survey_responses`), `clear_test_rounds`, and a `p_test` param added to `start_round`/`start_deck_round`. Powers `/test` — see its own section below. |
+
+`scripts/check-engine.mjs` is the Stage-2 equivalent of `scripts/check.mjs`
+— 17 behavioral assertions, attacks not descriptions (signs in as a
+throwaway player and tries to read what it shouldn't), prints pass/fail and
+counts only, cleans up its own test rows, never touches the six real
+profiles. Run it after touching any migration.
+
+### `/test` — playing games solo before the day (migration 0011)
+
+Choolwe asked to be able to test-play games on his phone before Saturday.
+The obvious way (just open `/play` and use the bypass code) has two real
+problems: it permanently sets `unlocked_at` for **everyone**, days early,
+with no way to undo it — and five games read real sealed survey content in
+their normal `start()`, so "just testing" would mean a real confession
+getting read before the day, which is exactly the thing §2 promises never
+happens, Choolwe included.
+
+`/test` (linked from the hub, visible only when `me.id === 'choolwe'`)
+solves both: it skips the unlock gate entirely without ever touching
+`unlocked_at`, and every round it starts is tagged `is_test = true`
+(`rounds.is_test`, migration 0011). `who_wrote_it`, `know_me_best`,
+`the_deep_end`, `most_likely_to` and `best_answer` each ship a `startTest`
+on their `GameModule` that deals obviously-fake content via
+`deal_test_pair`/`deal_test_hidden` instead of running their real
+survey-reading `start()` — those two new RPCs never read
+`survey_responses`, which is the actual safety property, not a convention.
+Every other game just reuses its real `start()` with `p_test: true`
+injected, since those never touched real content to begin with. A "Clear
+all test data" button calls `clear_test_rounds()`, which cascades away
+everything a test round touched — items, secrets, submissions, votes, and
+critically the points it awarded, so test play can never leak into the
+real Saturday leaderboard.
+
+**Extending this:** any new game whose `start()` reads `survey_responses`
+needs a matching `startTest`. Anything that only uses `deal_deck`/
+`deal_roles`/`deal_private` doesn't — those never touched real content
+either.
+
+### The 16 games
+
+Built across two parallel background sessions plus the main thread, each
+briefed with the same contract (`src/lib/game/types.ts`'s `GameModule`) and
+told independently to give their games a distinct visual identity rather
+than sharing one generic template — Choolwe was explicit that games which
+all look the same don't get played. Registered in `src/games/registry.ts`.
+
+- **🔒 Vault** (sealed until unlock, runs on real survey answers): Who Wrote
+  It?, Know Me Best, Paranoia, The Deep End, Truth or Dare.
+- **📱 Huddle** (phone-only, no TV needed): Most Likely To, Spyfall, The
+  Chameleon, Hot Takes, Never Have I Ever, Mafia.
+- **📺 Arena** (TV-first, greyed out in the launcher until `/tv` is open on
+  a laptop): Drawful, Fibbage, Best Answer, Buzz In (Trivia), Buzz In (Name
+  That Tune).
+
+Every game follows the same shape: `start()` deals the round via RPCs
+(never reads sealed content itself — that's Postgres's job), `PhoneView`
+renders off `useRoom()`. Adding a 17th game is a new folder plus one line
+in the registry, same as the original design intended.
+
+### Known simplifications — real, not hidden
+
+Time-boxed decisions, worth revisiting if there's slack before Saturday:
+
+- **No bespoke `TvView` for any Arena game yet.** `/tv` falls back to a
+  generic board (the round's public content + the live leaderboard) for
+  anything without one. Every Arena game is fully playable phone-only right
+  now — the TV adds a shared display, not a requirement — but the "TV is
+  the stage" spectacle PLAN.md described for Drawful/Fibbage/Buzz In isn't
+  built yet.
+- **Deck answer keys ship in the JS bundle** (Fibbage's facts, Trivia's
+  answers) — a determined cheater could read them in devtools. Same trust
+  level as a board game's answer booklet in the box; not worth a server
+  round-trip for six people who know each other. The one place this was
+  worth fixing properly: Fibbage's actual answer is sealed server-side via
+  `seed_truth_submission`, same mechanism Drawful reuses.
+- **Mafia's "who's still alive" is tracked in the host's own local React
+  state**, not the database. A live game of Mafia is always run by a
+  moderator narrating out loud anyway; this just gives them a private
+  ballot box, same division of labor as the real thing. Nobody's phone
+  hard-blocks a dead player from voting — the host self-polices it.
+- **Truth or Dare's pass counter is a static line**, not a live "you have 1
+  left" — `useRoom()` doesn't expose raw `scores`, and extending it wasn't
+  worth the scope for a display-only counter.
+- **Name That Tune needs internet at play time.** Clips stream live from
+  Apple's iTunes preview API (see `src/config/name-that-tune.ts` for why —
+  short version: committing real song files to this public repo, even
+  temporarily, is real copyright distribution, so nothing is hosted here).
+  Confirmed CORS-open and working as of Wed 12 Aug; if it ever isn't, Buzz
+  In: Trivia doesn't depend on it and still works.
+- **`docs/THEIR_ROUNDS.md` has a full buildable spec for the group's 12
+  invented rounds** (section 7 of the survey) — sorted by a subagent that
+  never let the raw text reach this conversation, per §2. Two turned out to
+  be existing named games ("Contact", a letter-reveal word game; and a
+  30-Seconds-style rapid question circle), one was recognisably Mafia and
+  got skipped per Choolwe's own rule (Mafia got built as its own game
+  instead, from a direct request, not from that submission). **None of
+  these are wired into the registry yet** — the spec is ready, the modules
+  aren't built. This is the highest-value remaining work if there's time
+  before Friday.
+
+### Before Saturday
+
+1. Real dress rehearsal — PLAN.md's checklist: six browser tabs plus a TV
+   tab playing one round of everything, then the same on a real iPhone
+   (lock/unlock mid-round, two minutes untouched to confirm no wake-lock
+   regression — the wake lock itself was never built this session, worth
+   checking it's still on the list).
+2. Change the bypass code (§10's to-do list, above).
+3. Build from `docs/THEIR_ROUNDS.md` if there's time.
+4. Consider at least one bespoke `TvView` — Drawful is the highest-value
+   candidate, it's the game that most needs the shared screen.
+5. Set the unlock a few minutes ahead once, watch `/play` and `/tv` both
+   transition live, then reset `EVENT.unlocksAt` back to 13:00 Saturday.
+
+---
+
+## 13. Overnight polish — night of 13→14 Aug 2026
+
+An autonomous session, briefed by `docs/AUTOMODE_BRIEF.md` (kept in the repo
+as the record of what was asked for and already-decided going in). Worked on
+branch `overnight-polish`, never `master` — nothing here is live. Read that
+file first if you want the original punch list this section reports against.
+
+**First thing found, before any of the punch list:** all of Stage 2 (§12 —
+the whole engine, all 16 games, everything) was sitting **uncommitted** on
+`master`'s working tree, alongside several tracked-file edits. That's real,
+already-verified work from Wed 12 Aug that had just never been committed.
+Moved it onto `overnight-polish` and committed it in ~7 logical chunks
+before touching anything new, so it can't be lost to a stray `git clean` or
+`checkout` by a future session. If you're reading this and wondering why
+the branch's early history looks like a second "Stage 2" build — that's
+why; it's the same Wed-12-Aug work, just finally committed.
+
+### P0 — all four fixed and verified
+
+- **Truth or Dare's Pass now actually passes.** New migration `0012`:
+  `pass_and_advance()`, a self-service RPC that does what `use_pass()`
+  (0009) did — deduct 25 points, cap 2/day — *and* advances/finishes the
+  round itself, scoped to `truth_or_dare` rounds only so it can't become a
+  general non-host round-advance backdoor. `use_pass()` itself is untouched
+  and unused now (harmless to leave; migrations aren't edited after the
+  fact, see §5/§9's own rules).
+- **Know Me Best: the subject can now see the reveal.** The bug was
+  `isSubject` being checked before `revealed` — one-line fix. On top of
+  that, per the brief's nice-to-have: the subject can now award their own
+  closest-guess (`award_closest_guess`, migration `0013`, checks caller =
+  `rounds.subject` rather than `assert_host()`), with the host's
+  `award_points` path left intact as a fallback.
+- **Paranoia's coin flip is synced across every phone.** Was local
+  `useState` on whichever device tapped the button. Now broadcasts a
+  `round_events` row (`kind: 'coin_flip'`) — the same "everyone needs this
+  the instant it happens" primitive Buzz In already used for who-buzzed-
+  first, no new RPC needed. Every phone derives its own flip animation from
+  the same broadcast row, timed against the event's server timestamp (same
+  reasoning `RoundTimer.tsx` already uses `round.started_at` over a local
+  clock).
+- **Screen Wake Lock is in.** New `useWakeLock()` hook
+  (`src/lib/useWakeLock.ts`), wired into `PlayGate` (whole time the room's
+  unlocked) and `TestRoom` (solo dress rehearsal). Re-acquires on
+  `visibilitychange` since the lock silently releases when a tab
+  backgrounds. Silently a no-op where unsupported/denied.
+
+### P1 — rules affordance, one file reaching all 16 games
+
+New `src/games/rules.ts` (plain data, zero imports from any game folder —
+importing the registry from `GameShell.tsx` would be circular) plus a
+rewritten `GameShell.tsx`: a "?" in the header opens a bottom-sheet with
+2-4 plain-English lines per game (what you'll see, what you do, how it's
+scored), and it auto-opens once per game per browser session
+(`sessionStorage`), reachable any time afterward. Spyfall's entry opens by
+naming "Skyfall" directly, since that's what Choolwe calls it in his head.
+Fibbage/Best Answer/The Deep End/Hot Takes get the specific mechanics the
+brief called out; the other 11 written from each game's own header comment
+and its actual scoring RPCs, not guessed.
+
+**A real bug surfaced by screenshotting this, not by typechecking:** the
+rules sheet is `position: fixed`, and it used to render *inside*
+`GameShell`'s `<header>`, which carries a `rise` entrance animation. For
+the ~0.5s that animation is playing, `header`'s computed `transform` isn't
+`none`, which makes it a CSS containing block for any `position: fixed`
+descendant — so the sheet rendered pinned to the animating header's box
+instead of the viewport, squashed against the top of the screen. This
+happened on literally every first-mount, since that's exactly when both
+the header animation *and* the rules sheet's auto-open fire together.
+Fixed by lifting the sheet to render as `header`'s sibling instead of its
+descendant. Would not have been caught without actually looking at a
+screenshot — see the verification note below.
+
+### P2
+
+- **Chameleon**, three concrete additions, not just copy: a shared 90s
+  countdown during "say one word each" (`RoundTimer`, auto-advances to
+  voting on expiry — needed a one-line supporting fix, `start()` now calls
+  `set_phase(..., 'play')` so `round.started_at` actually gets set, since
+  nothing else does on a fresh round); a caught Chameleon's one guess at
+  the secret word for partial credit, straight from the real board game
+  (`award_chameleon_guess`, migration `0014` — recomputes "caught"
+  server-side rather than trusting a client flag, so an actual survivor
+  can't also farm the partial-credit points); and sharper round copy on
+  what makes a clue too obvious vs. too vague, with a worked example.
+- **Never Have I Ever stays deliberately unscored** — a decision, not a
+  gap, now documented in the file's own header comment. Attaching points
+  to "I have" would incentivize downplaying real answers to protect a
+  score, which cuts against the point of the game. A "room can challenge
+  an answer" mechanic was considered and skipped for the same reason.
+
+### Content register — loosened, as already decided going in
+
+`AUTOMODE_BRIEF.md` §1 records the decision Choolwe made before this
+session started (content intensity loosened from `decks.ts`'s original
+"sexual is not the register" line — bolder, flirtier, more romantically
+pointed; hard ceiling unchanged: no dare involves kissing, touching, or
+anything physically/sexually intimate, nothing explicit, no alcohol,
+ever). Implemented: `TRUTHS`/`DARES` rewritten and grown from 5 to 8 items
+per tier, `NEVER_HAVE_I_EVER` from 10 to 12, and `decks.ts`'s header
+comment updated to state the real boundary instead of the stale original
+line. Every dare stays verbal/phone/performance-only — the same shape the
+original deck already used, just re-threaded through a romantic angle
+instead of a generic one.
+
+### P3 — Launcher rebuilt, GameShell polished, both actually screenshotted
+
+- **Bottom tab bar** (Huddle / Arena / Vault / Board) replaces the single
+  scrolling host-only list and the bare "waiting on the host" screen.
+  Everyone can now browse all three halls and the leaderboard; only the
+  host can launch (still enforced server-side, `assert_host()`, unchanged)
+  — non-host tiles render fully, just disabled, with a small explanatory
+  note. **One deviation from the brief's rough sketch, as it invited:** it
+  floated a "Vault sealed until unlock" tab state, but that state doesn't
+  exist in this engine — unlock is one global flag on `game_room`, not
+  per-hall, and `PlayGate` already blocks the whole Launcher from
+  rendering until the day's unlocked. By the time anyone sees the tab bar,
+  Vault is exactly as open as Huddle, so it gets identical treatment.
+- **Bespoke tile art**, new `src/games/tileArt.tsx`: every game's own
+  documented "VISUAL IDENTITY" (gold case-file for Know Me Best, dark
+  spotlight for Paranoia, Drawful's orange, Fibbage's gold, etc.) now
+  reaches the picker as a distinct accent color plus a small inline-SVG
+  motif per game (redacted document lines for Who Wrote It?, a coin
+  edge-on for Paranoia, a crescent moon for Mafia, a vinyl record's
+  grooves for Buzz In: Name That Tune...). Inline SVG, not raster/AI art,
+  per the brief — stays light on a static export.
+- **GameShell header typography fixed for real.** Hub.tsx's own
+  convention pairs a small eyebrow with a bold `text-lg` headline
+  underneath; GameShell had the game's actual title rendered *as* the tiny
+  muted eyebrow, with no headline anywhere on the screen a player spends
+  the whole round looking at. Flipped. Also bumped the "?" button to a
+  proper ~28px tap target and the progress bar for visibility across a
+  room.
+- **Verification tooling extended, not just used:** `/preview` only ever
+  mocked `PlayerContext` (Stage 1). Exported `RoomContext` (was
+  module-private) and added a "play" view (Launcher, with host/guest and
+  TV-connected toggles) and a "game" view (a mid-round Truth or Dare) to
+  `/preview`, and folded both into `npm run shots` permanently — future
+  sessions get Stage 2 screenshot coverage for free, not just Stage 1's.
+  This is what actually caught the containing-block bug above; typecheck
+  and lint were clean the whole time it was broken.
+
+### New migrations this session: 0012–0014
+
+All applied via `node scripts/migrate.mjs`, all verified with throwaway
+attack-style scripts modeled on `scripts/check-engine.mjs` (claim a
+throwaway player, try the thing, assert the DB's behavior, clean up in a
+`finally` — never touching the six real profiles) — written, run, and
+**deleted** once green, per §8's own "repro.mjs" convention. Re-ran
+`npm run check:engine` (all 18 checks) after each one.
+
+| File | RPC | What it protects |
+|---|---|---|
+| `0012_pass_and_advance.sql` | `pass_and_advance` | Self-service pass that actually advances the shared round; scoped to `truth_or_dare` |
+| `0013_award_closest_guess.sql` | `award_closest_guess` | Lets the round's subject (not just the host) award Know Me Best's 100; scoped to `know_me_best` and `caller = rounds.subject` |
+| `0014_chameleon_partial_credit.sql` | `award_chameleon_guess` | Caught Chameleon's one guess for partial credit; recomputes "caught" server-side so a survivor can't double-dip |
+
+### Verified, and how
+
+`npx tsc --noEmit`, `npm run lint`, `npm run build`, and `npm run
+check:engine` all pass clean as of the tip of `overnight-polish`. Every
+new RPC got a real behavioral test (not just "it compiled") via a
+throwaway script, deleted after. The Launcher/tile-art/GameShell work got
+actually screenshotted via the extended `/preview` + `npm run shots` (see
+above) and looked at — host view, guest view, TV-blocked Arena, the
+leaderboard tab, a live game screen, and the rules-sheet auto-open moment.
+
+**Not live-browser-verified:** the real `choolwe` profile was claimed by
+an active session for the whole night (checked before attempting anything
+that would've needed it) — matching `check.mjs`'s own documented
+precedent of skipping rather than forcing a takeover, nothing here ever
+claimed it or touched `unlocked_at`/`EVENT.unlocksAt`/the real bypass
+code. Worth a real `/test` click-through in the morning on all 16 games,
+same as PLAN.md's dress-rehearsal checklist already called for.
+
+**One cosmetic, dev-only artifact, not a bug:** screenshots taken via
+`npm run dev` show a small black "N" badge in the bottom-left corner —
+that's Next.js's own dev-mode indicator overlapping the tab bar's Huddle
+label. It doesn't exist in a production/static-export build; not worth
+touching `next.config.ts` for.
+
+### Deliberately not done
+
+- **P4 (`docs/THEIR_ROUNDS.md`'s 12 invented rounds)** — explicitly told
+  not to let this compete with P0-P3 for time tonight, and it didn't. The
+  spec is real and ready; still nothing wired into the registry.
+- **Real six-tab dress rehearsal**, on real iPhones, per PLAN.md's
+  checklist — still the bar to clear before Saturday, nothing tonight
+  substitutes for it.
+- **Bypass code** — still the placeholder from Wed 12 Aug (§10's
+  outstanding to-do). Nobody who's read this file knows what it currently
+  is; change it before Saturday.
+- **Real venue address** — still pending in `src/config/event.ts`.
+
+### Where things stand (fresh counts, read-only, never content)
+
+All six profiles claimed. Answer counts as of this session:
+Choolwe 39, Chileleko 20, Joy 7 (submitted), Latasha 39, Niza 65
+(submitted), Chibesa 47 (submitted). Three of six haven't hit "Seal it"
+yet. `game_room`: `host_player = 'choolwe'`, `unlocked_at = null`,
+`active_round = null` — the real Vault is untouched and still locked, as
+it should be until Saturday.
+
+---
+
+## 14. Their rounds — the group's own twelve, built (14 Aug 2026)
+
+The work §13 explicitly deferred as "P4": turning
+[THEIR_ROUNDS.md](THEIR_ROUNDS.md) — survey section 7's twelve "invent a
+round" answers, spec'd by an isolated subagent per §2 — into real games.
+**Nine new `GameModule`s, taking the app from 16 games to 25.** Same branch
+(`overnight-polish`), still nothing on `master`.
+
+Read THEIR_ROUNDS.md first if you're picking this up: it's the spec these were
+built against and it records every resolution Choolwe made on 12 Aug. It now
+carries a STATUS banner pointing back here.
+
+### What shipped
+
+| Spec | Game | Hall | The mechanic in one line |
+|---|---|---|---|
+| §1.1 | **Act It Out** | huddle | Charades, except ~2 cards in 5 come up OPPOSITE DAY and you act the inverse of your word |
+| §1.2 | **Spell It Out** | huddle | A spelling bee with no turns and no elimination — one reader, everyone spells at once |
+| §1.3 | **Survey Says** | huddle | Six-person Family Feud: you score by matching other people in the room, not by being right |
+| §2.3 | **Contact** | huddle | Letter-by-letter reveal, clue someone into the word, holder can block |
+| §2.5 | **30 Seconds** | huddle | Five words, half a minute, can't say any of them |
+| §3.1 | **Speed Cards** | huddle | Physical deck; the app is a clock, a house twist and a ledger |
+| §3.2 | **Clap Circle** | huddle | One clap passes, two reverses, three skips; miss yours and you're out |
+| §3.3 | **Centre Stage** | huddle | Everyone performs once, everyone rates 1-5, ratings shown per rater |
+| §3.4 | **Question Volley** | huddle | Never answer — ask the next person instead, three seconds or you're caught |
+| §2.1 | *(not a new game)* | vault | A **forfeit** is now the last card of every Truth or Dare deck |
+
+All nine carry `origin: "group"` on their module, which is the only thing the
+Launcher groups on — they render under a **"🧠 Your Rounds"** heading inside
+the Huddle tab, so on the day the room can see that a third of the schedule
+came out of their own answers. Whose idea each one was stays sealed; that
+reveal is the payoff, per THEIR_ROUNDS' own header.
+
+**Not built, deliberately, both because the spec said not to:** §2.4 (the
+secret-role elimination idea — it's Mafia by name with no distinguishing
+twist, and Mafia already shipped from a direct request) and §3.5 (the
+unidentified playground game — run it verbally). §2.2's audio round needed
+nothing: Buzz In: Name That Tune already covers it, and it already streams
+from iTunes rather than committing copyrighted clips to this public repo,
+which is exactly the fallback §4.1 recommended.
+
+### New migrations: 0015 and 0016
+
+Applied with `node scripts/migrate.mjs`, verified with throwaway attack-style
+scripts (deleted once green, per §8's convention), and `npm run check:engine`
+re-run after each.
+
+| File | What it adds |
+|---|---|
+| `0015_their_rounds_primitives.sql` | `normalise_answer` (one shared definition of "same answer"), `score_exact` (pays everyone who typed the sealed answer), `score_agreement` (§1.3 asked for this by name — pays 100 × (group size − 1)), `deal_private_answers` (an accept-list, so a synonym doesn't cost a point), `set_round_config` (host-only shallow merge into `rounds.config`) |
+| `0016_forfeits_and_contact.sql` | `deal_forfeit` / `reroll_forfeit` (§2.1), `contact_reveal_letter` (§2.3) |
+
+`ContentSource` gained a fifth variant, `{ kind: "private" }`, exactly as
+THEIR_ROUNDS §0 asked.
+
+### Two judgement calls worth knowing about
+
+**§2.1's eligibility filter could not be built as specified.** The spec wanted
+`deal_forfeit()` to read an eligibility attribute "from sealed survey data
+inside the definer function" so a forfeit that doesn't fit its target is never
+dealt. There is no such data: `src/config/survey.ts` has no question about
+relationship status, siblings or living parents, and three of the six had
+already sealed their survey, so adding one wasn't available either.
+
+The requirement was kept and the check moved to the only place the answer
+exists — the recipient's own head. Every forfeit carries a `needs` line shown
+to the one phone it was dealt to, and that phone can swap it for another
+(`reroll_forfeit`) with **no public trace at all**: no event, no score, no
+config write, so a re-roll is indistinguishable from having been dealt that
+card in the first place. That beats the alternative the spec itself warned
+against — a public column on `players` would broadcast a private fact to the
+whole room. Which *person* gets it is still drawn by Postgres, as specified.
+Full reasoning is in `0016`'s header; read it before changing this.
+
+**A real bug found while verifying, unrelated to P4 but far more serious.**
+`src/lib/useNow.ts` passed `() => Date.now()` as `useSyncExternalStore`'s
+getSnapshot. React compares snapshots with `Object.is` on every render to
+decide whether to re-render, so a fresh number every call reports "changed"
+every time — an unbounded render loop ending in *"Maximum update depth
+exceeded"*. Its only caller is `RoomProvider`, which every phone in `/play`
+and `/tv` sits inside all day. **This would have taken the whole game console
+down on Saturday.**
+
+It survived §13's screenshot pass because `/preview` — and therefore
+`npm run shots` — mocks `RoomContext` directly instead of mounting
+`RoomProvider`. The one screen in the app that never renders that hook is the
+screen the UI was being reviewed on. Fixed by reading the clock only on the
+interval tick, into a ref. The lesson is in the file's own comment: `/preview`
+is not a substitute for loading a real page.
+
+### Getting out of a round
+
+An active round used to be a trap — `PlayRoom` renders the round instead of
+the picker for everybody, and the only way back was the host clicking through
+to the end of whatever was running. `GameShell` now carries a **✕** next to
+the "?", which reaches all 25 games at once:
+
+- **"Back to the games list"** — local to one phone, via the new
+  `ExitContext` (`src/components/play/ExitContext.tsx`). The round carries on
+  for everyone else, and a "still going" bar above the tab bar rejoins in one
+  tap. The left-round is stored as an id, not a boolean, so starting the next
+  game automatically pulls everyone back in.
+- **"End this round for everyone"** — host only, two taps to confirm. Just
+  `set_phase(done)`, which was already `assert_host()`-gated.
+
+`/test` has the same escape hatch and its own rejoin bar.
+
+### Rules sheet, changed
+
+- **Once per device, ever, not once per tab session.** It was keyed on
+  `sessionStorage`, which Safari resets when a tab closes or gets evicted —
+  across a seven-hour day that means the sheet reappearing in front of games
+  people already know. Now `localStorage`, wrapped in try/catch for
+  private-mode Safari.
+- **Three ways out, and it can't trap you.** A ✕ in the corner (44px, always
+  visible), "Got it" pinned to the bottom, the backdrop, and Escape. The sheet
+  is now a flex column capped at `85dvh` with the rules scrolling between a
+  fixed header and footer — without that, a four-line entry (Contact,
+  Spyfall, 30 Seconds) grew past the bottom of a small iPhone and pushed "Got
+  it" off-screen with nothing to scroll.
+
+### Verified, and how
+
+`npx tsc --noEmit`, `npm run lint`, `npm run build` (all 11 routes prerender)
+and `npm run check:engine` (18 checks) pass clean at the tip.
+
+More usefully: a throwaway Playwright script drove **every one of the ten
+touched games through the real `/test` flow in a real browser** — each
+module's actual `start()` against the actual database, asserting the round was
+created, tagged `is_test`, dealt the right number of item slots, dealt the
+right ones privately, and threw nothing in the browser. It also checked the
+rules-sheet contract and the whole leave / rejoin / end-round flow. Same
+throwaway-seventh-profile pattern `check-engine.mjs` uses, restoring
+`game_room` exactly and never touching the six real profiles or `unlocked_at`.
+Deleted once green — but it's the single highest-value thing to rebuild if a
+future session adds a game, because it is what caught the `useNow` loop.
+
+`npm run shots` gained three permanent shots — the "Your Rounds" section of
+the picker, a mid-round Clap Circle (the seat ring is the widest new layout
+and the likeliest to break at 393px), and the exit sheet.
+
+### Still open
+
+- **Real six-tab dress rehearsal on real iPhones** — still the bar, still not
+  done. It matters more now at 25 games than it did at 16.
+- **Content decks are hand-written and unplayed.** `src/config/their-rounds.ts`
+  holds all of it. Worth a skim before Saturday, particularly `FORFEITS` —
+  every one of those cards asks somebody to ring a real person.
+- **Bypass code** still the Wed-12-Aug placeholder. **Real venue address**
+  still pending. Both from §13, both unchanged.
