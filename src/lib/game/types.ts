@@ -113,11 +113,20 @@ export type GameRoom = {
  * content ships in the JS bundle and the host's device deals it, which is
  * fine precisely because it isn't secret. `roles` is the odd-one-out draw —
  * server-side because whoever draws the spy would otherwise know the spy.
+ *
+ * `private` is the fifth, added for the group's own invented rounds (see
+ * docs/THEIR_ROUNDS.md §0): content dealt to ONE named phone via
+ * deal_private(), with the answer sealed alongside it. Distinct from `deck`
+ * because the launcher can't deal these in one bulk call — the round picks a
+ * performer/reader/holder first and deals per item — and distinct from
+ * `roles` because the recipient is chosen for a reason, not drawn at random
+ * to be hidden.
  */
 export type ContentSource =
   | { kind: "survey"; questionIds: string[]; items: number }
   | { kind: "deck" }
   | { kind: "roles" }
+  | { kind: "private" }
   | { kind: "none" };
 
 export type GameViewProps = {
@@ -144,6 +153,14 @@ export type GameModule = {
   /** One line in the host's launcher. Should say what the room has to DO. */
   blurb: string;
   source: ContentSource;
+  /**
+   * Set on the rounds the group invented themselves in survey section 7
+   * (docs/THEIR_ROUNDS.md). The Launcher groups these under their own
+   * heading so the room can see, on the day, that a third of the schedule
+   * is theirs. Deliberately just a flag and not a name — whose idea each one
+   * was stays sealed until it's actually played, same as everything else.
+   */
+  origin?: "group";
   /** Arena games need the laptop; the launcher greys them out without a TV. */
   requiresTv?: boolean;
   /** Rough minutes, so the host can pick something that fits the moment. */
