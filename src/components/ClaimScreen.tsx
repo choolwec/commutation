@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { EVENT } from "@/config/event";
+import { BackToHub } from "@/components/BackToHub";
 
 /**
  * First thing anyone sees: pick which of the six you are.
@@ -37,6 +38,11 @@ export function ClaimScreen() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 pad-safe-t pad-safe-b">
+      {/* Shown even though this also renders on "/" itself, where it's a
+          harmless no-op — this screen is reached from /play, /awards and
+          /recap too whenever nobody's claimed a profile yet on this device,
+          and there it's a real dead end without it. See BackToHub's rule. */}
+      <BackToHub absolute className="rise" />
       <div className="rise">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-mute">
           {EVENT.name}

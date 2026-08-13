@@ -6,6 +6,7 @@ import { useRoom } from "@/lib/game/room";
 import { useWakeLock } from "@/lib/useWakeLock";
 import { GAMES, gameById } from "@/games/registry";
 import type { GameModule } from "@/lib/game/types";
+import { BackToHub } from "@/components/BackToHub";
 import { Leaderboard } from "./Leaderboard";
 import { ExitContext } from "./ExitContext";
 
@@ -95,6 +96,7 @@ export function TestRoom() {
 
   return (
     <main className="mx-auto max-w-md px-5 pad-safe-t pb-24">
+      <BackToHub className="rise mb-3 block" />
       <header className="rise rounded-2xl border-2 border-dashed border-gold bg-gold/10 p-4">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-gold">Test mode</p>
         <p className="mt-1 text-sm leading-relaxed">

@@ -5,6 +5,7 @@ import { usePlayer } from "@/lib/player";
 import { getSupabase } from "@/lib/supabase/client";
 import { useRoom } from "@/lib/game/room";
 import { Leaderboard } from "@/components/play/Leaderboard";
+import { BackToHub } from "@/components/BackToHub";
 
 /**
  * AWARDS — end-of-day superlatives, computed from the real ledger rather
@@ -121,6 +122,7 @@ export function Awards() {
 
   return (
     <main className="mx-auto max-w-md px-5 pad-safe-t pad-safe-b">
+      <BackToHub className="mb-3 block" />
       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-mute">Commutation</p>
       <h1 className="mt-2 text-3xl font-black tracking-tight">Awards</h1>
       <p className="mt-2 text-sm text-mute">Computed from what actually happened today.</p>

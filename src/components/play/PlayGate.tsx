@@ -6,6 +6,7 @@ import { useRoom } from "@/lib/game/room";
 import { useWakeLock } from "@/lib/useWakeLock";
 import { EVENT } from "@/config/event";
 import { Countdown } from "@/components/Countdown";
+import { BackToHub } from "@/components/BackToHub";
 
 /**
  * Everything behind "the day has actually started".
@@ -64,6 +65,7 @@ export function PlayGate({ children }: { children: React.ReactNode }) {
   if (!unlocked) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-6 px-6 pad-safe-t pad-safe-b text-center">
+        <BackToHub absolute className="rise" />
         <p className="rise text-xs font-semibold uppercase tracking-[0.25em] text-mute">
           The Vault, The Huddle, The Arena
         </p>

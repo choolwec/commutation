@@ -858,5 +858,52 @@ and the likeliest to break at 393px), and the exit sheet.
 - **Content decks are hand-written and unplayed.** `src/config/their-rounds.ts`
   holds all of it. Worth a skim before Saturday, particularly `FORFEITS` —
   every one of those cards asks somebody to ring a real person.
-- **Bypass code** still the Wed-12-Aug placeholder. **Real venue address**
-  still pending. Both from §13, both unchanged.
+- **Real venue address** still pending, from §13.
+- ~~**Bypass code**~~ — set by Choolwe directly on 13 Aug, no longer the
+  Wed-12-Aug placeholder. Not written here, per its own rule (§6).
+
+---
+
+## 15. Standing rule — every full-screen page needs a way back (13 Aug 2026)
+
+Found right after §14 shipped: clicking the new Hub card into `/play`, or
+either of the new `/awards` / `/recap` links, was a one-way trip. Once
+Choolwe pointed it out for the Vault card specifically, the same check
+across the rest of the app found the identical gap on `/awards`, `/recap`,
+`/test`, and `ClaimScreen` (which any of those routes can land on too, if
+nobody's claimed a profile yet on that device — it isn't only reached from
+`/`).
+
+**Why this matters more here than on a normal website:** the app is meant to
+be added to an iPhone home screen and run standalone. No browser chrome, no
+address bar, no swipe-back gesture. Once a page fills the screen, whatever
+that page itself provides to get out is the *only* way out. A missing back
+link isn't a papercut on this app the way it would be on a page with a
+browser's own back button sitting right there — it's a dead end.
+
+**The rule, going forward:** every full-screen top-level view (every route
+under `src/app/*/page.tsx`, and every state `Gate` can render on its own)
+must render `src/components/BackToHub.tsx`, or reach one within a tap or two
+through something that already has an exit. Concretely:
+
+- `PlayGate`'s locked/countdown screen, `Launcher`, `TestRoom`, `ClaimScreen`,
+  `Awards`, `RecapGallery` — all render it directly now.
+- Deep inside a live round, `GameShell`'s own ✕ ("leave this round", §14)
+  satisfies the rule *transitively*: round → picker (which renders
+  `BackToHub`) → hub. That's deliberate — 25 games each carrying their own
+  redundant hub link would be worse than the one-hop chain.
+- **The one documented exception is `/tv`.** It's a fixed display meant to
+  sit on a laptop all day with nobody navigating it by hand; a stray "back"
+  tap there would yank the shared screen away from a live round for the
+  whole room. Don't add one there without a real reason.
+
+`BackToHub` takes an `absolute` prop for screens with no header row of their
+own (`PlayGate`, `ClaimScreen`) and renders inline otherwise (`Launcher`,
+`TestRoom`, `Awards`, `RecapGallery`). Read its own file header before adding
+a new full-screen route — it explains the two placement patterns and why
+`ClaimScreen` always shows it even on `/` itself (harmless no-op there;
+without it, it's a real dead end reached from anywhere else).
+
+Verified with `npx tsc --noEmit` and a visual check via `/preview` (the
+`claim` and `play` views both show it correctly at iPhone width) before
+pushing straight to `master` — small, additive, no schema or logic changes.

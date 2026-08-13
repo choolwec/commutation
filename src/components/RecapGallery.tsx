@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { getSupabase } from "@/lib/supabase/client";
+import { BackToHub } from "@/components/BackToHub";
 
 type Photo = { id: string; path: string; player_id: string; created_at: string };
 
@@ -50,6 +51,7 @@ export function RecapGallery() {
 
   return (
     <main className="mx-auto max-w-2xl px-5 pad-safe-t pad-safe-b">
+      <BackToHub className="mb-3 block" />
       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-mute">Commutation</p>
       <h1 className="mt-2 text-3xl font-black tracking-tight">The recap</h1>
       <p className="mt-2 text-sm text-mute">

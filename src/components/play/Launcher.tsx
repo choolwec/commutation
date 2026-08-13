@@ -8,6 +8,7 @@ import type { GameModule, Hall } from "@/lib/game/types";
 import { EVENT } from "@/config/event";
 import { EVIDENCE_PROMPTS } from "@/config/decks";
 import { TILE_ACCENT, TileMotif } from "@/games/tileArt";
+import { BackToHub } from "@/components/BackToHub";
 import { Leaderboard } from "./Leaderboard";
 
 type Tab = Hall | "leaderboard";
@@ -231,6 +232,7 @@ export function Launcher() {
   return (
     <main className="mx-auto max-w-md px-5 pad-safe-t pb-28">
       <header className="rise flex items-center justify-between">
+        <BackToHub />
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-mute">
           {isHost ? "You're hosting" : "Browsing"}
         </p>
