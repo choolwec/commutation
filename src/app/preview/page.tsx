@@ -18,6 +18,8 @@ import { ClaimScreen } from "@/components/ClaimScreen";
 import { Survey } from "@/components/survey/Survey";
 import { Launcher } from "@/components/play/Launcher";
 import { truthOrDare } from "@/games/vault/truth-or-dare";
+import { clapCircle } from "@/games/huddle/clap-circle";
+import { ExitContext } from "@/components/play/ExitContext";
 
 const mockRoster: PlayerRow[] = CREW.map((c, i) => ({
   id: c.id,
@@ -33,6 +35,7 @@ const mockRoster: PlayerRow[] = CREW.map((c, i) => ({
 }));
 
 const noop = async () => {};
+const noopSync = () => {};
 
 /** Enough points to make the leaderboard look lived-in, not a fresh table. */
 const mockLeaderboard = mockRoster
@@ -70,8 +73,30 @@ const mockItems: RoundItem[] = [
   },
 ];
 
+/** Clap Circle mid-round: the ring, the pointer, two people already out.
+ *  Deals no round_items at all, so config IS the whole game state — which
+ *  makes it the cheapest of the group's rounds to mock and the best check
+ *  that SeatRing lays six faces out sensibly at phone width. */
+const mockCircleRound: Round = {
+  id: "mock-circle",
+  game: "clap_circle",
+  hall: "huddle",
+  phase: "play",
+  subject: null,
+  config: { at: 3, dir: -1, out: ["joy", "niza"] },
+  item_cursor: 0,
+  show_submissions: false,
+  show_votes: false,
+  started_at: new Date().toISOString(),
+  is_test: true,
+  created_at: new Date().toISOString(),
+  ended_at: null,
+};
+
 export default function PreviewPage() {
-  const [view, setView] = useState<"hub" | "claim" | "survey" | "play" | "game">("hub");
+  const [view, setView] = useState<
+    "hub" | "claim" | "survey" | "play" | "game" | "circle"
+  >("hub");
   const [asHost, setAsHost] = useState(true);
   const [tvConnected, setTvConnected] = useState(false);
 
@@ -96,7 +121,7 @@ export default function PreviewPage() {
   // it, and null is what "no active round, show the picker" looks like.
   const roomCtx: RoomCtx = {
     room: { id: "commutation", host_player: "choolwe", unlocked_at: new Date().toISOString(), active_round: null, tv_seen_at: null },
-    round: view === "game" ? mockRound : null,
+    round: view === "game" ? mockRound : view === "circle" ? mockCircleRound : null,
     items: view === "game" ? mockItems : [],
     secrets: [],
     submissions: [],
@@ -135,7 +160,7 @@ export default function PreviewPage() {
             </div>
           )}
           <div className="rounded-full border border-line bg-ink-2/95 p-1 backdrop-blur">
-            {(["hub", "claim", "survey", "play", "game"] as const).map((v) => (
+            {(["hub", "claim", "survey", "play", "game", "circle"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -152,7 +177,14 @@ export default function PreviewPage() {
         {view === "claim" && <ClaimScreen />}
         {view === "survey" && <Survey />}
         {view === "play" && <Launcher />}
-        {view === "game" && <truthOrDare.PhoneView round={mockRound} />}
+        {/* The exit affordance in GameShell only offers "back to the games
+            list" when something above it can actually do that — PlayRoom and
+            TestRoom provide it, /tv doesn't. Mocked here so the sheet renders
+            with both options in a shot. */}
+        <ExitContext.Provider value={{ leave: noopSync }}>
+          {view === "game" && <truthOrDare.PhoneView round={mockRound} />}
+          {view === "circle" && <clapCircle.PhoneView round={mockCircleRound} />}
+        </ExitContext.Provider>
       </RoomContext.Provider>
     </PlayerContext.Provider>
   );
