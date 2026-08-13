@@ -11,19 +11,29 @@ import { useRoom } from "@/lib/game/room";
  * arbitrary. Reading from the same server timestamp means every phone (and
  * the TV) agrees, and a phone that reconnects mid-round shows the correct
  * remaining time instead of restarting from full.
+ *
+ * `from` overrides which server timestamp that is. round.started_at is the
+ * right default — set_phase/set_cursor stamp it, so the clock restarts when
+ * the round moves. But 30 Seconds' clock starts when the DESCRIBER taps go,
+ * not when the host deals the card, and that moment is a round_events row
+ * (public, self-inserted) rather than a phase change. Same drift-proofing
+ * either way: still one server timestamp every phone counts down to, never
+ * a local one.
  */
 export function RoundTimer({
   seconds,
+  from,
   onExpire,
   className,
 }: {
   seconds: number;
+  from?: string | null;
   onExpire?: () => void;
   className?: string;
 }) {
   const { round, isHost } = useRoom();
   const [remaining, setRemaining] = useState(seconds);
-  const startedAt = round?.started_at;
+  const startedAt = from ?? round?.started_at;
 
   useEffect(() => {
     if (!startedAt) return;
