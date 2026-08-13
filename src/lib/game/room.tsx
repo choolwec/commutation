@@ -59,7 +59,11 @@ type Ctx = {
   call: (fn: string, args?: Record<string, unknown>) => Promise<unknown>;
 };
 
-const RoomContext = createContext<Ctx | null>(null);
+// Exported (only) so /preview can mock game-room state the same way it
+// already mocks PlayerContext — no Supabase project needed to review a UI
+// change. Real call sites should keep using RoomProvider/useRoom below.
+export const RoomContext = createContext<Ctx | null>(null);
+export type { Ctx as RoomCtx };
 
 /** A TV that hasn't checked in for two minutes is a TV that got unplugged. */
 const TV_STALE_MS = 2 * 60 * 1000;
