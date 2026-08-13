@@ -7,6 +7,7 @@ import { useWakeLock } from "@/lib/useWakeLock";
 import { GAMES, gameById } from "@/games/registry";
 import type { GameModule } from "@/lib/game/types";
 import { Leaderboard } from "./Leaderboard";
+import { ExitContext } from "./ExitContext";
 
 /**
  * TEST MODE — play any non-TV game solo, before the day, without any of
@@ -45,6 +46,9 @@ export function TestRoom() {
   const [starting, setStarting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+  // Same "step out of this round" escape hatch /play has — keyed to the
+  // round id so launching the next game pulls you back in. See ExitContext.
+  const [leftRound, setLeftRound] = useState<string | null>(null);
 
   // Solo dress rehearsal still deserves a screen that doesn't lock mid-game.
   useWakeLock(true);
@@ -73,18 +77,18 @@ export function TestRoom() {
     setClearing(false);
   }
 
-  if (round && round.phase !== "done") {
+  if (round && round.phase !== "done" && leftRound !== round.id) {
     const game = gameById(round.game);
     if (game) {
       return (
-        <>
+        <ExitContext.Provider value={{ leave: () => setLeftRound(round.id) }}>
           {!round.is_test && (
             <div className="fixed left-0 right-0 top-0 z-[60] bg-flame py-1 text-center text-[11px] font-black uppercase tracking-wider text-ink">
               This is a real round, not a test one — careful
             </div>
           )}
           <game.PhoneView round={round} />
-        </>
+        </ExitContext.Provider>
       );
     }
   }
@@ -105,6 +109,27 @@ export function TestRoom() {
         <p className="rise mt-4 rounded-2xl border border-flame/40 bg-flame/10 px-4 py-3 text-sm text-flame">
           {error}
         </p>
+      )}
+
+      {/* Stepped out of a round that's still open. /play puts this bar above
+          its tab bar; there's no tab bar here, so it goes at the top of the
+          list. Without it, leaving a round in test mode would strand you
+          with no way back short of clearing all the test data. */}
+      {round && round.phase !== "done" && leftRound === round.id && (
+        <button
+          type="button"
+          onClick={() => setLeftRound(null)}
+          className="rise mt-4 flex w-full items-center gap-3 rounded-2xl border border-flame/50 bg-flame/10 px-4 py-3 text-left active:scale-[0.98]"
+        >
+          <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-flame" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-bold">
+              {gameById(round.game)?.title ?? "A round"} is still going
+            </span>
+            <span className="block text-xs text-mute">tap to rejoin</span>
+          </span>
+          <span className="shrink-0 text-lg">{gameById(round.game)?.icon ?? "▶"}</span>
+        </button>
       )}
 
       <div className="mt-6 space-y-2">
