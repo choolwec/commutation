@@ -7,6 +7,7 @@ import type { GameModule } from "@/lib/game/types";
 import { GameShell, PrimaryButton, WaitingOnHost } from "@/components/play/GameShell";
 import { DRAWFUL_PROMPTS } from "@/config/decks";
 import { Canvas } from "./Canvas";
+import { DrawfulTv } from "./TvView";
 
 /**
  * DRAWFUL — orange, crayon energy, a real canvas. The reason it's tier-1
@@ -272,4 +273,5 @@ export const drawful: GameModule = {
     }
   },
   PhoneView: Phone,
+  TvView: DrawfulTv,
 };

@@ -145,5 +145,31 @@ await page.waitForTimeout(400);
 await page.screenshot({ path: path.join(OUT, "game-exit-sheet.png") });
 console.log("  ✓ game-exit-sheet");
 
+// Drawful's TvView — the first bespoke Arena board (HANDOFF §12's "no
+// bespoke TvView yet" gap). Laptop-width, not phone-width: /tv is meant to
+// sit on a TV or laptop screen, so this reuses the page at a desktop
+// viewport instead of the 393px one every other shot in this file uses.
+await page.setViewportSize({ width: 1280, height: 800 });
+// label shown on the phase toggle vs. the file/phase name — "play" collides
+// with the view switcher's own "play" button, so the toggle shows different
+// words for the same three Round["phase"] values.
+const tvPhases = [
+  ["play", "drawing"],
+  ["vote", "titling"],
+  ["reveal", "reveal"],
+];
+for (const [phase, label] of tvPhases) {
+  await page.goto(`${BASE}/preview`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "tv", exact: true }).click();
+  await page.waitForTimeout(200);
+  if (phase !== "reveal") {
+    await page.getByRole("button", { name: label, exact: true }).click();
+    await page.waitForTimeout(200);
+  }
+  await page.addStyleTag({ content: "[data-preview-toggle]{display:none !important}" });
+  await page.screenshot({ path: path.join(OUT, `tv-drawful-${phase}.png`) });
+  console.log(`  ✓ tv-drawful-${phase}`);
+}
+
 await browser.close();
 console.log(`shots written to .shots/`);

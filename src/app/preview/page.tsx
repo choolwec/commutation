@@ -11,7 +11,7 @@
 import { useState } from "react";
 import { PlayerContext, type PlayerCtx, type PlayerRow } from "@/lib/player";
 import { RoomContext, type RoomCtx } from "@/lib/game/room";
-import type { Round, RoundItem } from "@/lib/game/types";
+import type { Round, RoundItem, Submission, Vote, RoundSecret } from "@/lib/game/types";
 import { CREW } from "@/config/crew";
 import { Hub } from "@/components/Hub";
 import { ClaimScreen } from "@/components/ClaimScreen";
@@ -19,6 +19,7 @@ import { Survey } from "@/components/survey/Survey";
 import { Launcher } from "@/components/play/Launcher";
 import { truthOrDare } from "@/games/vault/truth-or-dare";
 import { clapCircle } from "@/games/huddle/clap-circle";
+import { drawful } from "@/games/arena/drawful";
 import { ExitContext } from "@/components/play/ExitContext";
 
 const mockRoster: PlayerRow[] = CREW.map((c, i) => ({
@@ -93,12 +94,66 @@ const mockCircleRound: Round = {
   ended_at: null,
 };
 
+// A placeholder squiggle, standing in for a real canvas.toDataURL() JPEG —
+// Drawful's TvView (the first bespoke one, see HANDOFF §12/"before Saturday")
+// only cares that `.value` is an image src, so an inline SVG data URI is
+// enough to check layout without a real drawn stroke.
+const MOCK_DRAWING =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220"><rect width="320" height="220" fill="#f4f1ea"/><path d="M20 180 C 80 40, 140 200, 200 60 S 280 20 300 100" stroke="#ff5c39" stroke-width="10" fill="none" stroke-linecap="round"/></svg>',
+  );
+
+/** Turn 2 of 4, mid-Drawful — enough distinct idx values on `items` for the
+ *  turn counter, none of it readable by the TV (private items filter on
+ *  `visible_to` in the real app; here it's just four rows for the Set to
+ *  count). Phase is driven by the tv/tv-phase toggle below. */
+const mockDrawfulRound = (phase: Round["phase"]): Round => ({
+  id: "mock-drawful",
+  game: "drawful",
+  hall: "arena",
+  phase,
+  subject: null,
+  config: {},
+  item_cursor: 1,
+  show_submissions: phase !== "play",
+  show_votes: phase === "reveal" || phase === "done",
+  started_at: new Date().toISOString(),
+  is_test: true,
+  created_at: new Date().toISOString(),
+  ended_at: null,
+});
+const mockDrawfulItems: RoundItem[] = [0, 1, 2, 3].map((idx) => ({
+  id: `di-${idx}`,
+  round_id: "mock-drawful",
+  idx,
+  kind: "role",
+  content: "prompt (private)",
+  visible_to: mockRoster[idx % mockRoster.length].id,
+  meta: {},
+}));
+const mockDrawfulSubmissions: Submission[] = [
+  { id: "s-draw", round_id: "mock-drawful", player_id: mockRoster[3].id, idx: 1, kind: "drawing", value: MOCK_DRAWING, created_at: new Date().toISOString() },
+  { id: "s-truth", round_id: "mock-drawful", player_id: "", idx: 1, kind: "lie", value: "A flamingo doing its taxes", created_at: new Date().toISOString() },
+  { id: "s-2", round_id: "mock-drawful", player_id: mockRoster[0].id, idx: 1, kind: "lie", value: "My mum's Sunday hat", created_at: new Date().toISOString() },
+  { id: "s-3", round_id: "mock-drawful", player_id: mockRoster[1].id, idx: 1, kind: "lie", value: "The WiFi router, mid-argument", created_at: new Date().toISOString() },
+];
+const mockDrawfulVotes: Vote[] = [
+  { id: "v-1", round_id: "mock-drawful", player_id: mockRoster[0].id, idx: 1, value: "s-truth", created_at: new Date().toISOString() },
+  { id: "v-2", round_id: "mock-drawful", player_id: mockRoster[1].id, idx: 1, value: "s-2", created_at: new Date().toISOString() },
+  { id: "v-3", round_id: "mock-drawful", player_id: mockRoster[4].id, idx: 1, value: "s-truth", created_at: new Date().toISOString() },
+];
+const mockDrawfulSecrets: RoundSecret[] = [
+  { id: "sec-1", round_id: "mock-drawful", item_id: null, idx: 1, author: null, payload: { truth_submission: "s-truth" } },
+];
+
 export default function PreviewPage() {
   const [view, setView] = useState<
-    "hub" | "claim" | "survey" | "play" | "game" | "circle"
+    "hub" | "claim" | "survey" | "play" | "game" | "circle" | "tv"
   >("hub");
   const [asHost, setAsHost] = useState(true);
   const [tvConnected, setTvConnected] = useState(false);
+  const [tvPhase, setTvPhase] = useState<Round["phase"]>("reveal");
 
   const ctx: PlayerCtx = {
     roster: mockRoster,
@@ -121,11 +176,18 @@ export default function PreviewPage() {
   // it, and null is what "no active round, show the picker" looks like.
   const roomCtx: RoomCtx = {
     room: { id: "commutation", host_player: "choolwe", unlocked_at: new Date().toISOString(), active_round: null, tv_seen_at: null },
-    round: view === "game" ? mockRound : view === "circle" ? mockCircleRound : null,
-    items: view === "game" ? mockItems : [],
-    secrets: [],
-    submissions: [],
-    votes: [],
+    round:
+      view === "game"
+        ? mockRound
+        : view === "circle"
+          ? mockCircleRound
+          : view === "tv"
+            ? mockDrawfulRound(tvPhase)
+            : null,
+    items: view === "game" ? mockItems : view === "tv" ? mockDrawfulItems : [],
+    secrets: view === "tv" ? mockDrawfulSecrets : [],
+    submissions: view === "tv" ? mockDrawfulSubmissions : [],
+    votes: view === "tv" ? mockDrawfulVotes : [],
     events: [],
     leaderboard: mockLeaderboard,
     loading: false,
@@ -159,8 +221,27 @@ export default function PreviewPage() {
               </button>
             </div>
           )}
+          {view === "tv" && (
+            <div className="flex gap-1 rounded-full border border-line bg-ink-2/95 p-1 backdrop-blur">
+              {(
+                [
+                  ["play", "drawing"],
+                  ["vote", "titling"],
+                  ["reveal", "reveal"],
+                ] as const
+              ).map(([p, label]) => (
+                <button
+                  key={p}
+                  onClick={() => setTvPhase(p)}
+                  className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${tvPhase === p ? "bg-flame text-ink" : "text-mute"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="rounded-full border border-line bg-ink-2/95 p-1 backdrop-blur">
-            {(["hub", "claim", "survey", "play", "game", "circle"] as const).map((v) => (
+            {(["hub", "claim", "survey", "play", "game", "circle", "tv"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
@@ -185,6 +266,10 @@ export default function PreviewPage() {
           {view === "game" && <truthOrDare.PhoneView round={mockRound} />}
           {view === "circle" && <clapCircle.PhoneView round={mockCircleRound} />}
         </ExitContext.Provider>
+        {/* /tv skips <Gate> and ExitContext entirely in the real app (no
+            exit affordance there by design — see HANDOFF §15's documented
+            exception), so it's mocked outside both. */}
+        {view === "tv" && drawful.TvView && <drawful.TvView round={mockDrawfulRound(tvPhase)} />}
       </RoomContext.Provider>
     </PlayerContext.Provider>
   );
