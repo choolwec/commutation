@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { useRoom } from "@/lib/game/room";
-import type { GameModule } from "@/lib/game/types";
+import { getSupabase } from "@/lib/supabase/client";
+import type { GameModule, GameViewProps } from "@/lib/game/types";
+import { Leaderboard } from "@/components/play/Leaderboard";
 import { NAME_THAT_TUNE } from "@/config/name-that-tune";
 import {
   BuzzButton,
@@ -24,6 +26,14 @@ import {
  * Deliberately visually distinct from the Trivia variant of this same
  * mechanic: different glow color, a spinning-record motif instead of a
  * quiz-show board, audio bars instead of multiple-choice tiles.
+ *
+ * TV BOARD: the reveal is deliberately gated on the WINNER'S OWN action, not
+ * the host's. Whoever buzzed in says the song out loud, and only once they
+ * tap "I've guessed" on their own phone does the title/artist/cover art
+ * appear on the TV — that's the suspense the room is actually watching for.
+ * Same round_events primitive Trivia's "ruled" event and Contact's contacts
+ * use: a public, self-inserted, timestamped row (kind: "guessed") the TV
+ * gates its reveal on, rather than any client-only state.
  */
 
 const GLOW = "#a855f7"; // --color-violet
@@ -37,7 +47,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-type TuneMeta = { title: string; artist: string; previewUrl: string };
+type TuneMeta = { title: string; artist: string; previewUrl: string; artworkUrl: string | undefined };
 
 function Vinyl({ spinning }: { spinning: boolean }) {
   return (
@@ -56,17 +66,33 @@ function Vinyl({ spinning }: { spinning: boolean }) {
 }
 
 function Phone() {
-  const { roster } = usePlayer();
-  const { round, isHost, call } = useRoom();
+  const { me, roster } = usePlayer();
+  const { round, events, isHost, call } = useRoom();
   const item = useCurrentItems()[0];
   const total = useTotalItems();
   const { winner, locked, iAmWinner, buzz, buzzing } = useBuzzState();
   const [ruled, setRuled] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [guessing, setGuessing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const meta = item?.meta as Partial<TuneMeta> | undefined;
   const winnerName = roster.find((p) => p.id === winner?.player_id)?.name;
+  const cursor = round?.item_cursor ?? 0;
+  const guessed = events.some((e) => e.idx === cursor && e.kind === "guessed");
+
+  async function iveGuessed() {
+    const supabase = getSupabase();
+    if (!supabase || !round || !me || guessing) return;
+    setGuessing(true);
+    await supabase.from("round_events").insert({
+      round_id: round.id,
+      idx: cursor,
+      player_id: me.id,
+      kind: "guessed",
+    });
+    setGuessing(false);
+  }
 
   // Only the host's device plays the clip out loud — six phones each
   // starting their own copy of the same song, slightly out of phase, would
@@ -151,7 +177,28 @@ function Phone() {
             <p className="text-2xl font-black" style={{ color: GLOW }}>
               {winnerName ?? "Someone"} buzzed first!
             </p>
-            <p className="mt-2 text-sm text-mute">Say the song out loud.</p>
+            {!iAmWinner && (
+              <p className="mt-2 text-sm text-mute">
+                {guessed ? "Check the TV." : "Waiting for them to say it…"}
+              </p>
+            )}
+            {iAmWinner && !guessed && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-mute">Say it out loud, then tap when you&apos;re done.</p>
+                <button
+                  type="button"
+                  onClick={() => void iveGuessed()}
+                  disabled={guessing}
+                  className="rounded-full px-8 py-3 text-sm font-black uppercase tracking-wide text-ink active:scale-95 disabled:opacity-50"
+                  style={{ background: GLOW }}
+                >
+                  {guessing ? "…" : "I've guessed →"}
+                </button>
+              </div>
+            )}
+            {iAmWinner && guessed && (
+              <p className="mt-2 text-sm text-mute">On the TV now — check the room.</p>
+            )}
           </div>
         )}
         {buzzing && <p className="text-xs text-mute">buzzing…</p>}
@@ -185,6 +232,101 @@ function Phone() {
   );
 }
 
+function TvVinyl({ spinning, artworkUrl }: { spinning: boolean; artworkUrl?: string }) {
+  return (
+    <div
+      className={`relative grid h-72 w-72 place-items-center rounded-full border-8 border-line bg-ink shadow-2xl ${
+        spinning ? "motion-safe:animate-[spin_4s_linear_infinite]" : ""
+      }`}
+      style={{
+        background:
+          "repeating-radial-gradient(circle, #1a1723 0px, #1a1723 8px, #100e17 9px, #100e17 14px)",
+      }}
+    >
+      {artworkUrl ? (
+        <img
+          src={artworkUrl}
+          alt=""
+          className="h-32 w-32 rounded-full border-4 object-cover"
+          style={{ borderColor: GLOW }}
+        />
+      ) : (
+        <div className="h-24 w-24 rounded-full" style={{ background: GLOW }} />
+      )}
+    </div>
+  );
+}
+
+function Tv({ round }: GameViewProps) {
+  const { roster } = usePlayer();
+  const { events, items } = useRoom();
+  const cursor = round.item_cursor;
+  const item = items.find((i) => i.idx === cursor);
+  const meta = item?.meta as Partial<TuneMeta> | undefined;
+
+  const here = events.filter((e) => e.idx === cursor);
+  const buzz = here.find((e) => e.kind === "buzz") ?? null;
+  const guessed = here.some((e) => e.kind === "guessed");
+  const winnerName = roster.find((p) => p.id === buzz?.player_id)?.name;
+
+  if (!meta?.title) {
+    return (
+      <main className="grid min-h-dvh place-items-center">
+        <p className="text-2xl font-bold text-mute">Cueing up the next one…</p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="relative grid min-h-dvh grid-cols-[1fr_360px] gap-8 overflow-hidden p-10">
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background: `radial-gradient(ellipse 70% 55% at 50% 0%, color-mix(in oklab, ${GLOW} 25%, transparent), transparent 65%)`,
+        }}
+      />
+      <section className="flex flex-col items-center justify-center gap-8 text-center">
+        <p className="text-xl font-black uppercase tracking-[0.3em]" style={{ color: GLOW }}>
+          🎧 Buzz In · Name That Tune
+        </p>
+
+        <TvVinyl spinning={!buzz} artworkUrl={guessed ? meta.artworkUrl : undefined} />
+
+        {!buzz && <p className="text-lg text-mute">Buzzers are live…</p>}
+
+        {buzz && !guessed && (
+          <div
+            className="rise flex items-center gap-3 rounded-full border-2 px-8 py-4"
+            style={{
+              borderColor: GLOW,
+              background: `color-mix(in oklab, ${GLOW} 18%, transparent)`,
+              boxShadow: `0 0 48px color-mix(in oklab, ${GLOW} 45%, transparent)`,
+            }}
+          >
+            <span className="text-2xl font-black" style={{ color: GLOW }}>
+              {winnerName ?? "Someone"} buzzed first!
+            </span>
+          </div>
+        )}
+
+        {guessed && (
+          <div className="rise">
+            <p className="text-4xl font-black leading-tight">“{meta.title}”</p>
+            <p className="mt-2 text-xl font-bold text-mute">{meta.artist}</p>
+          </div>
+        )}
+      </section>
+
+      <aside className="flex flex-col justify-center">
+        <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-mute">
+          Leaderboard
+        </p>
+        <Leaderboard />
+      </aside>
+    </main>
+  );
+}
+
 export const buzzInMusic: GameModule = {
   id: "buzz_in_music",
   title: "Buzz In: Name That Tune",
@@ -205,7 +347,12 @@ export const buzzInMusic: GameModule = {
           );
           const json = await res.json();
           const previewUrl = json?.results?.[0]?.previewUrl as string | undefined;
-          return previewUrl ? { ...t, previewUrl } : null;
+          // iTunes only serves a 100x100 thumbnail by default — the URL
+          // itself encodes the size, so asking for the same file at
+          // 600x600 is just a string swap, no extra request.
+          const artworkUrl100 = json?.results?.[0]?.artworkUrl100 as string | undefined;
+          const artworkUrl = artworkUrl100?.replace("100x100bb", "600x600bb");
+          return previewUrl ? { ...t, previewUrl, artworkUrl } : null;
         } catch {
           return null;
         }
@@ -229,4 +376,5 @@ export const buzzInMusic: GameModule = {
     });
   },
   PhoneView: Phone,
+  TvView: Tv,
 };
