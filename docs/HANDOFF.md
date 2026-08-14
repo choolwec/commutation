@@ -9,9 +9,11 @@ without knowing why they're there.
 Stage 2 was built (see §12); **updated again night of 13→14 Aug 2026** for an
 overnight autonomous polish pass (see §13); **updated again 14 Aug 2026** when
 the group's own twelve invented rounds were finally built (see §14 — the game
-count is now **25**, not 16). If it's later than that, treat anything
-time-sensitive below (survey counts, "not yet built") as stale and re-verify
-rather than trust it.
+count is now **25**, not 16); **updated again 14 Aug 2026, later the same day**
+for the art pass (see §16 — Drawful also got its bespoke `TvView`, closing an
+item §12/§13 had both flagged as outstanding). If it's later than that, treat
+anything time-sensitive below (survey counts, "not yet built") as stale and
+re-verify rather than trust it.
 
 ---
 
@@ -907,3 +909,113 @@ without it, it's a real dead end reached from anywhere else).
 Verified with `npx tsc --noEmit` and a visual check via `/preview` (the
 `claim` and `play` views both show it correctly at iPhone width) before
 pushing straight to `master` — small, additive, no schema or logic changes.
+
+---
+
+## 16. The art pass, and a bespoke Drawful `TvView` (14 Aug 2026)
+
+Two unrelated things landed in this session, in two separate commits
+straight to `master` (`ccdd62b` then `ae52382`) — additive, no schema
+changes, same precedent as §15.
+
+### Drawful finally has a bespoke `TvView` (`ccdd62b`)
+
+This was found sitting **uncommitted** on `master`'s working tree at the
+start of the session — same situation §13 opened with for all of Stage 2,
+just smaller. `src/games/arena/drawful/TvView.tsx` (`DrawfulTv`), wired into
+`drawful`'s `GameModule`, plus `/preview` gained a `"tv"` view (mock
+round/items/submissions/votes/secrets for all three phases) and `npm run
+shots` gained a laptop-width screenshot pass for it. This closes the item
+§12's "Known simplifications" and §13's "Before Saturday" §4 both flagged:
+"no bespoke TvView for any Arena game yet ... Drawful is the highest-value
+candidate." The other Arena games still fall back to the generic board.
+
+### The art pass (`ae52382`)
+
+Choolwe generated 8 pieces of AI hero/mood art on davinci.ai and asked for
+them wired in. `docs/ART.md` — the brief he was working from — went through
+two real revisions in this same session before any of these 8 were
+generated, both worth knowing about if it's ever edited again:
+
+1. **First pass fixed an "everything has eyes" bug.** The original 20-item
+   brief's shared style block told the model every object gets "simple
+   cartoon eyes and sometimes small white-gloved hands" — a blanket rule
+   that was leaking onto props that were never meant to have a face (dice,
+   spotlights, wheels). Rewritten so personality is opt-in per scene, named
+   explicitly only on the handful of pieces meant to have it.
+2. **Second pass was a full pivot, after seeing the actual output.** The
+   "1930s rubber-hose Fleischer/Disney" style wording wasn't describing
+   *linework* to the model — it was generating literal Cuphead, gloves and
+   all, no matter how the prompt insisted "not its characters." That phrase
+   is too fused to one specific IP in training data to fight with wording;
+   the fix was dropping the reference entirely, not a better sentence. New
+   style is written from scratch (a screenprinted jazz-club/stage-magic
+   poster, no franchise named anywhere) and — this was the other real find —
+   targets the app's actual dark theme. The original brief said "warm cream
+   base palette"; the app is `--color-ink: #08070c` with a CSS grain overlay
+   on every page (`globals.css`'s `.grain::before`, applied in
+   `layout.tsx`). Nobody had checked that before this session. The new
+   prompts target near-black backgrounds and explicitly tell the model not
+   to render grain/vignette/halftone into the image, since the app already
+   layers that in CSS and fighting it was wasted prompt weight.
+
+Cut from 20 pieces to 8 at the same time: every game already has bespoke
+flat-SVG key art in `src/games/tileArt.tsx` (§13's P3), so most of the
+original list was duplicating work that already shipped for free. What's
+left is the atmosphere SVG can't do — `hub-hero`, `awards-hero`, the three
+hall banners (`hall-vault`/`hall-huddle`/`hall-arena`), and hero pieces for
+the three highest-value games (`game-drawful`, `game-truth-or-dare`,
+`game-clap-circle`). All 8 were generated once against the pivoted brief,
+reviewed by hand (no character/eye bleed on any of them), and committed —
+the 20-item list never got generated against. The app icon was deliberately
+left off this list too: it's better served by the existing hand-built
+generator (`npm run icons`, `scripts/make-icons.mjs` — a gradient-ring SVG
+mark already in `public/`) than a raster generation gambled on surviving a
+shrink to fingertip size. No action was needed there; it already exists.
+
+**Pipeline:** raw downloads live in `art/` (~14MB of PNGs, committed as a
+source-of-truth staging folder, see `art/README.md`). New `npm run art`
+(`scripts/resize-art.mjs`, same sharp-based pattern as `make-icons.mjs`)
+resizes and re-encodes them as webp into `public/art/` — ~800KB total,
+served by the app. Re-run it any time a file in `art/` changes.
+
+**Wired in:**
+- `hub-hero` and `awards-hero` — banners atop `Hub.tsx` and `Awards.tsx`.
+- `hall-vault`/`hall-huddle`/`hall-arena` — banner the matching tab inside
+  `Launcher.tsx`'s `HallSection`.
+- `game-drawful`/`game-truth-or-dare`/`game-clap-circle` — a new hero-intro
+  beat in `GameShell.tsx` (`HERO_INTRO` map), full-bleed over the whole
+  screen with the game's icon/title, for these 3 games only. Auto-dismisses
+  after 1.8s or on tap. Tracked by `round.id` rather than a mount-once flag,
+  since a game's `PhoneView`/`GameShell` instance doesn't necessarily
+  remount between two different rounds of the same game — this way a
+  replayed round still gets its beat. It re-plays if a phone leaves and
+  rejoins a round via the "still going" bar (§14) too, since that fully
+  unmounts `GameShell`; decided not worth guarding against for a ~2-second
+  cosmetic beat.
+
+One cosmetic asset quirk, harmless: `hall-vault.png` generated at a 3:4
+portrait crop despite the square prompt — doesn't matter, every placement
+uses `object-cover` inside a fixed-height container regardless of source
+aspect.
+
+**Verified:** `npx tsc --noEmit`, `npm run lint` (clean beyond the
+pre-existing repo-wide `no-img-element` warnings — this codebase uses plain
+`<img>` everywhere on purpose, `next.config.ts`'s own comment says so, static
+export can't run the image optimizer), `npm run build` (all 11 routes still
+prerender, all 8 webp files land in `out/art/`). Actually looked at, not
+just typechecked: a throwaway Playwright pass against `/preview` screenshotted
+the hub hero, all three hall banners, and the Truth or Dare / Clap Circle
+intro beats mid-display and after auto-dismiss — confirmed the beat correctly
+gives way to the real round content (and, for Clap Circle's first-ever
+"play", to the rules sheet underneath it) rather than the two overlays
+fighting for the same `z-50` layer.
+
+### Still open
+
+- Same items §14 already listed, unaffected by this: **real six-tab dress
+  rehearsal on real iPhones**, and a skim of `their-rounds.ts`'s forfeit
+  cards. Neither touched this session.
+- The other 22 games still use only their `tileArt.tsx` SVG motif, no photo
+  key art — deliberate, per the "already covered" reasoning above, not a
+  gap to fill later unless the brief changes.
