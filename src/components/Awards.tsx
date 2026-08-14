@@ -7,6 +7,10 @@ import { useRoom } from "@/lib/game/room";
 import { Leaderboard } from "@/components/play/Leaderboard";
 import { BackToHub } from "@/components/BackToHub";
 
+// Files in public/ are copied verbatim and get no automatic rewriting — see
+// layout.tsx's own BASE constant for why this has to be here too.
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 /**
  * AWARDS — end-of-day superlatives, computed from the real ledger rather
  * than typed in by hand. Deliberately built from signals that are robust
@@ -123,7 +127,16 @@ export function Awards() {
   return (
     <main className="mx-auto max-w-md px-5 pad-safe-t pad-safe-b">
       <BackToHub className="mb-3 block" />
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-mute">Commutation</p>
+
+      <img
+        src={`${BASE}/art/awards-hero.webp`}
+        alt=""
+        className="rise h-56 w-full rounded-3xl border border-line object-cover"
+      />
+
+      <p className="mt-6 text-xs font-semibold uppercase tracking-[0.25em] text-mute">
+        Commutation
+      </p>
       <h1 className="mt-2 text-3xl font-black tracking-tight">Awards</h1>
       <p className="mt-2 text-sm text-mute">Computed from what actually happened today.</p>
 

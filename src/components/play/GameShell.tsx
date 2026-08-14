@@ -5,6 +5,20 @@ import { useRoom } from "@/lib/game/room";
 import { RULES } from "@/games/rules";
 import { useExit } from "./ExitContext";
 
+// Files in public/ are copied verbatim and get no automatic rewriting — see
+// layout.tsx's own BASE constant for why this has to be here too.
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+// The 3 games with a hero piece (docs/ART.md) worth a brief cinematic beat
+// before the round itself takes over the screen. Not all 16+ games get one —
+// most already have their identity carried by tileArt.tsx's tile motif, this
+// is reserved for the handful worth the extra second.
+const HERO_INTRO: Partial<Record<string, string>> = {
+  drawful: "game-drawful",
+  truth_or_dare: "game-truth-or-dare",
+  clap_circle: "game-clap-circle",
+};
+
 /**
  * The frame every PhoneView renders inside. Keeps the visual language
  * consistent with Stage 1 (Hub.tsx's card/section rhythm) without every game
@@ -43,6 +57,21 @@ export function GameShell({
   const rules = gameId ? RULES[gameId] : undefined;
   const exit = useExit();
   const [exitOpen, setExitOpen] = useState(false);
+
+  // The hero-intro beat: shows once per round, for the 3 games listed in
+  // HERO_INTRO, then gets out of the way on its own or on a tap. Tracked by
+  // round id rather than a mount-once flag because this component doesn't
+  // remount between two different rounds of the same game back to back.
+  const heroName = gameId ? HERO_INTRO[gameId] : undefined;
+  const roundId = round?.id;
+  const [dismissedRound, setDismissedRound] = useState<string | null>(null);
+  const showIntro = Boolean(heroName && roundId && roundId !== dismissedRound);
+
+  useEffect(() => {
+    if (!showIntro || !roundId) return;
+    const t = setTimeout(() => setDismissedRound(roundId), 1800);
+    return () => clearTimeout(t);
+  }, [showIntro, roundId]);
 
   // Lifted out of the header on purpose: `header` carries the `rise`
   // animation, and for the ~0.5s that's in flight its computed `transform`
@@ -137,6 +166,29 @@ export function GameShell({
 
       {exitOpen && round && (
         <ExitSheet title={title} onClose={() => setExitOpen(false)} onLeave={exit?.leave} />
+      )}
+
+      {showIntro && heroName && roundId && (
+        <div
+          role="button"
+          aria-label={`Continue to ${title}`}
+          className="rise fixed inset-0 z-50 flex flex-col justify-end bg-ink"
+          onClick={() => setDismissedRound(roundId)}
+        >
+          <img
+            src={`${BASE}/art/${heroName}.webp`}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="relative bg-gradient-to-t from-ink via-ink/80 to-transparent px-6 pb-12 pt-20 text-center">
+            <p className="text-2xl font-black tracking-tight">
+              {icon} {title}
+            </p>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-mute">
+              tap to continue
+            </p>
+          </div>
+        </div>
       )}
     </main>
   );

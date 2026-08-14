@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "icons": "node scripts/make-icons.mjs",
+    "art": "node scripts/resize-art.mjs",
     "shots": "node scripts/shots.mjs",
     "check": "node scripts/check.mjs",
     "check:engine": "node scripts/check-engine.mjs",

@@ -8,6 +8,10 @@ import { TOTAL_QUESTIONS } from "@/config/survey";
 import { Countdown } from "./Countdown";
 import { Evidence } from "./Evidence";
 
+// Files in public/ are copied verbatim and get no automatic rewriting — see
+// layout.tsx's own BASE constant for why this has to be here too.
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 function Section({
   label,
   children,
@@ -54,8 +58,15 @@ export function Hub() {
         )}
       </header>
 
+      {/* ── hero ─────────────────────────────────────────────────── */}
+      <img
+        src={`${BASE}/art/hub-hero.webp`}
+        alt=""
+        className="rise mt-6 h-52 w-full rounded-3xl border border-line object-cover"
+      />
+
       {/* ── countdown ────────────────────────────────────────────── */}
-      <div className="rise mt-12 text-center">
+      <div className="rise mt-8 text-center">
         <p className="text-sm font-medium text-mute">
           {EVENT.dateLabel} · {EVENT.timeLabel}
         </p>

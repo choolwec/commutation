@@ -11,6 +11,16 @@ import { TILE_ACCENT, TileMotif } from "@/games/tileArt";
 import { BackToHub } from "@/components/BackToHub";
 import { Leaderboard } from "./Leaderboard";
 
+// Files in public/ are copied verbatim and get no automatic rewriting — see
+// layout.tsx's own BASE constant for why this has to be here too.
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+const HALL_HERO: Record<Hall, string> = {
+  vault: "hall-vault",
+  huddle: "hall-huddle",
+  arena: "hall-arena",
+};
+
 type Tab = Hall | "leaderboard";
 const TABS: Tab[] = ["huddle", "arena", "vault", "leaderboard"];
 
@@ -108,6 +118,12 @@ function HallSection({
 
   return (
     <section className="rise">
+      <img
+        key={hall}
+        src={`${BASE}/art/${HALL_HERO[hall]}.webp`}
+        alt=""
+        className="rise mb-4 h-40 w-full rounded-3xl border border-line object-cover"
+      />
       <h2 className="text-sm font-black tracking-tight">{HALL_LABEL[hall]}</h2>
       <p className="mt-0.5 text-xs text-mute">{HALL_BLURB[hall]}</p>
       {blocked && (
