@@ -1,14 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
-import type { GameModule } from "@/lib/game/types";
+import type { GameModule, GameViewProps } from "@/lib/game/types";
 import {
   GameShell,
   PrimaryButton,
   WaitingOnHost,
 } from "@/components/play/GameShell";
 import { SubmissionVote } from "@/components/play/SubmissionVote";
+import { Leaderboard } from "@/components/play/Leaderboard";
 import { FIBBAGE_FACTS } from "@/config/decks";
 
 /**
@@ -21,6 +23,15 @@ import { FIBBAGE_FACTS } from "@/config/decks";
  * server-side rather than trusted to the honor system — worth it here
  * because the whole game is "spot the real one among these," and if the
  * answer were sitting in the page source the game would just be broken.
+ *
+ * TV BOARD: mirrors the phone's own phase gating exactly — the fact and a
+ * live "X have written" count during `play`, the anonymous lie list during
+ * `vote` (never who wrote which, same as every phone), and only at
+ * `reveal`/`done` does the true answer light up green among the lies. The
+ * TV can't leak anything the phones don't already hand out, because it
+ * reads the exact same `submissions`/`secrets` the phones do — RLS is what
+ * keeps the true submission's id anonymous everywhere until reveal, not
+ * this component.
  */
 
 const GLOW = "#ffc247"; // --color-gold
@@ -198,6 +209,73 @@ function Phone() {
   );
 }
 
+function Tv({ round }: GameViewProps) {
+  const { roster } = usePlayer();
+  const { items, submissions, secrets } = useRoom();
+  const cursor = round.item_cursor;
+  const item = items.find((i) => i.idx === cursor);
+  const revealed = round.phase === "reveal" || round.phase === "done";
+  const secret = secrets.find((s) => s.idx === cursor);
+  const truthId = secret?.payload?.truth_submission as string | undefined;
+  const here = submissions.filter((s) => s.idx === cursor);
+
+  if (!item) {
+    return (
+      <main className="grid min-h-dvh place-items-center">
+        <p className="text-2xl font-bold text-mute">Dealing prompts…</p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="relative grid min-h-dvh grid-cols-[1fr_360px] gap-8 overflow-hidden p-10">
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{ background: `radial-gradient(ellipse 70% 55% at 50% 0%, color-mix(in oklab, ${GLOW} 25%, transparent), transparent 65%)` }}
+      />
+      <section className="flex flex-col items-center justify-center gap-7 text-center">
+        <p className="text-xl font-black uppercase tracking-[0.3em]" style={{ color: GLOW }}>
+          🎤 Fibbage
+        </p>
+        <p className="rise max-w-4xl text-4xl font-black leading-tight">{item.content}</p>
+
+        {round.phase === "play" && (
+          <p className="rise text-lg font-bold text-mute">
+            {here.length} of {roster.length} have written a lie…
+          </p>
+        )}
+
+        {(round.phase === "vote" || revealed) && here.length > 0 && (
+          <div className="rise flex w-full max-w-2xl flex-col gap-3">
+            {here.map((s) => {
+              const isTruth = revealed && s.id === truthId;
+              return (
+                <div
+                  key={s.id}
+                  className={`rounded-2xl border-2 px-6 py-4 text-left text-xl font-bold transition-all duration-500 ${
+                    isTruth
+                      ? "border-emerald-400 bg-emerald-400/15 text-emerald-200"
+                      : "border-line bg-ink-2 text-paper"
+                  }`}
+                >
+                  {s.value} {isTruth && "✓ the truth"}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <aside className="flex flex-col justify-center">
+        <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-mute">
+          Leaderboard
+        </p>
+        <Leaderboard />
+      </aside>
+    </main>
+  );
+}
+
 export const fibbage: GameModule = {
   id: "fibbage",
   title: "Fibbage",
@@ -223,4 +301,5 @@ export const fibbage: GameModule = {
     }
   },
   PhoneView: Phone,
+  TvView: Tv,
 };
