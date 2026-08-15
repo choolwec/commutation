@@ -1358,6 +1358,31 @@ points at a real object, and that object's public Storage URL actually
 resolves (200) — not just that a database row exists pointing at one.
 Throwaway script (`scripts/_evidence_check.mjs`), deleted after use.
 
+**One last pass, prompted by the Mafia/Drawful pattern**: both of this
+session's real bugs lived specifically in a "special seat" view — the one
+device out of six seeing something different from everyone else. Three
+such views hadn't been forced-verified the same way Mafia, Drawful, and
+Truth or Dare's forfeit target had: Know Me Best's subject, Contact's
+holder, Hot Takes' clue-giver. **Hot Takes' clue-giver view was forced live
+and passed clean.** The other two hit the Supabase rate limit again
+mid-attempt (genuinely exhausted this time, not a false alarm — `npm run
+check`/`check:engine` were both still fine moments before and after) before
+a fully clean run completed, so treat them as reasoned-through rather than
+freshly confirmed: Know Me Best's `isSubject` is `round.subject === me.id`,
+a plain, always-visible column, structurally nothing like Mafia's
+`round_secrets`-based check — and this exact path was already exercised
+live, hours earlier in this same session, with a *real* subject (niza)
+mid-round, before any of tonight's forcing technique existed. Contact's
+`iAmHolder` is the identical `round.subject` pattern, and `myWord`'s
+`kind === "private"` check is one of the ones the exhaustive kind-string
+cross-check above already confirmed matches `deal_private`'s actual insert
+— plus the *negative* case (a non-holder correctly not seeing the word,
+and correctly seeing "I've got a contact") was already confirmed live
+earlier. Worth a genuine two-minute live check on `/test` before Saturday
+if there's a spare moment, purely to convert "reasoned through" into
+"watched happen" — but there's no structural reason, and no diagnostic
+signal, to expect either one is actually broken.
+
 ### Verified, end to end
 
 `npx tsc --noEmit`, `npm run lint` (27-warning baseline, unchanged),
@@ -1387,3 +1412,6 @@ award card rather than showing a broken one when nobody has scored yet.
   still the bar, still Choolwe's own to run. Venue is done (§10 of
   `docs/POLISH_BRIEF.md`); bypass code was set by Choolwe directly and
   stays undocumented here on purpose (§6).
+- **Know Me Best's subject view and Contact's holder view** — reasoned
+  through and partially live-confirmed, not freshly watched end to end —
+  see the note above. Two minutes on `/test` would close this out for good.
