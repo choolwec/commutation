@@ -258,7 +258,7 @@ export const FORFEITS: Forfeit[] = [
     needs: "a close friend who isn't in this room",
   },
   {
-    content: "Text the person you message most today: \"I've been thinking about you all afternoon.\" Read out whatever comes back.",
+    content: "Text the person you message most today: \"Random one — you make my day better.\" Read out whatever comes back, then tell them it's a party dare.",
     needs: "someone you text most days",
   },
   {
@@ -270,8 +270,8 @@ export const FORFEITS: Forfeit[] = [
     needs: "anyone at all in your recent calls",
   },
   {
-    content: "Send your ex — or the closest thing you've got to one — a message the room writes for you. The room may not be cruel, but it may be nosy.",
-    needs: "an ex, or a situationship that ended",
+    content: "Let the room write one text to your group chat's biggest gossip, asking for \"the tea\" on literally anything right now. Send it exactly as written.",
+    needs: "a friend known for having all the gossip",
   },
   {
     content: "Call whoever you've saved under the softest nickname in your phone. Put it on speaker and let the room hear how you greet them.",

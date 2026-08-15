@@ -20,8 +20,15 @@ import { PersonVote } from "@/components/play/PersonVote";
 const NIGHT_BG = "radial-gradient(circle at 50% 20%, #1a1723, #08070c 70%)";
 const DAY_BG = "radial-gradient(circle at 50% 0%, #ffc24722, transparent 70%)";
 
+// Named so Phone() can tell the mafia player apart from their OWN role card
+// (see the comment on iAmMafia below) rather than only from round_secrets,
+// and so start() below can't drift out of sync with what Phone() compares
+// against.
+const MAFIA_ROLE = "You are the MAFIA. Each night, secretly pick someone to eliminate.";
+const TOWN_ROLE = "You are a TOWNSPERSON. Find the Mafia before they pick everyone off.";
+
 function Phone() {
-  const { me, roster } = usePlayer();
+  const { roster } = usePlayer();
   const { round, secrets, votes, isHost, call } = useRoom();
   const myRole = useCurrentItems().find((i) => i.kind === "role");
   const cursor = round?.item_cursor ?? 0;
@@ -31,8 +38,15 @@ function Phone() {
   const [dead, setDead] = useState<Set<string>>(new Set());
   const [winner, setWinner] = useState<"mafia" | "town" | null>(null);
 
+  // round_secrets is sealed until the round's phase is 'reveal'/'done' (0005)
+  // — which the night-vote UI below can never simultaneously satisfy, since
+  // it only shows while `!revealed`. Deriving mafiaId from secrets is only
+  // safe for reveal-time uses (RevealDead's nightVote lookup). Whether *this*
+  // phone is the mafia has to come from something visible immediately: its
+  // own role card, dealt via round_items (visible_to-scoped, not phase-
+  // gated) — the same source Spyfall already trusts for "am I the spy".
   const mafiaId = secrets.find((s) => s.idx === 0)?.author ?? null;
-  const iAmMafia = Boolean(mafiaId && me && mafiaId === me.id);
+  const iAmMafia = myRole?.content === MAFIA_ROLE;
   const alive = roster.filter((p) => p.claimed_by && !dead.has(p.id));
 
   async function openReveal() {
@@ -258,8 +272,8 @@ export const mafia: GameModule = {
     })) as string;
     await call("deal_roles", {
       p_round: roundId,
-      p_shared_content: "You are a TOWNSPERSON. Find the Mafia before they pick everyone off.",
-      p_odd_content: "You are the MAFIA. Each night, secretly pick someone to eliminate.",
+      p_shared_content: TOWN_ROLE,
+      p_odd_content: MAFIA_ROLE,
       p_odd_count: 1,
     });
   },
