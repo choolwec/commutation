@@ -242,16 +242,8 @@ export type Forfeit = { content: string; needs: string };
 
 export const FORFEITS: Forfeit[] = [
   {
-    content: "Call your mum. Tell her you're bringing someone home to meet her next month. Do not explain yourself. Speaker on.",
-    needs: "a parent you could actually ring right now",
-  },
-  {
     content: "Ring the last person who left you on read and ask them, sincerely, what you did wrong.",
     needs: "someone who has left you on read recently",
-  },
-  {
-    content: "Voice-note your oldest sibling your honest ranking of all the siblings, worst to best.",
-    needs: "at least one sibling",
   },
   {
     content: "Call your best friend outside this room and ask them to describe your type in exactly three words. Speaker on.",
@@ -260,10 +252,6 @@ export const FORFEITS: Forfeit[] = [
   {
     content: "Text the person you message most today: \"I've been thinking about you all afternoon.\" Read out whatever comes back.",
     needs: "someone you text most days",
-  },
-  {
-    content: "Call a cousin and ask them to tell the room the most embarrassing story they have about you.",
-    needs: "a cousin whose number you have",
   },
   {
     content: "Ring the last person in your call history and ask them to rate your last three life decisions out of ten.",
