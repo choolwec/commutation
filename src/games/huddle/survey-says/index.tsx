@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
-import type { GameModule } from "@/lib/game/types";
+import type { GameModule, GameViewProps } from "@/lib/game/types";
 import {
   ContentCard,
   GameShell,
   PrimaryButton,
   WaitingOnHost,
 } from "@/components/play/GameShell";
+import { TvShell } from "@/components/play/TvShell";
 import { useSeats, useTotalItems, pickN } from "@/games/common";
 import { SURVEY_SAYS_PROMPTS } from "@/config/their-rounds";
 
@@ -280,6 +281,109 @@ function Phone() {
   );
 }
 
+/**
+ * TV: the board, which is the one prop a Feud round is supposed to have.
+ *
+ * Same grouping the phone's Board does (groupKey above, mirroring
+ * normalise_answer in 0015) — panels sized by how many people landed on
+ * that answer, biggest at the top. Answers stay hidden until the host
+ * shows the board, because they're `submissions` and RLS keeps everyone
+ * else's sealed until set_reveal; before that the screen just counts
+ * else's sealed until the host shows the board.
+ */
+function Tv({ round }: GameViewProps) {
+  const { items, submissions } = useRoom();
+  const seats = useSeats();
+  const cursor = round.item_cursor;
+  const item = items.find((i) => i.kind === "deck" && i.idx === cursor);
+  const total = useMemo(() => new Set(items.map((i) => i.idx)).size || 1, [items]);
+  const revealed = round.phase === "reveal" || round.phase === "done";
+
+  const here = submissions.filter((s) => s.idx === cursor && s.kind === "answer");
+  const panels = useMemo(() => {
+    const map = new Map<string, Panel>();
+    for (const s of here) {
+      const key = groupKey(s.value);
+      const found = map.get(key);
+      if (found) found.players.push(s.player_id ?? "");
+      else map.set(key, { key, label: s.value.trim(), players: [s.player_id ?? ""] });
+    }
+    return [...map.values()].sort((a, b) => b.players.length - a.players.length);
+  }, [here]);
+  const top = Math.max(1, panels[0]?.players.length ?? 1);
+
+  if (!item) {
+    return (
+      <TvShell icon="📋" title="Survey Says" accent={ACCENT} gameId="survey_says">
+        <p className="text-3xl font-bold text-mute">Bringing up the board…</p>
+      </TvShell>
+    );
+  }
+
+  return (
+    <TvShell
+      icon="📋"
+      title="Survey Says"
+      accent={ACCENT}
+      gameId="survey_says"
+      meta={`Prompt ${cursor + 1} of ${total}`}
+    >
+      <p className="rise max-w-4xl text-5xl font-black leading-tight">{item.content}</p>
+
+      {!revealed ? (
+        // No live count: submissions stay author-scoped until the host
+        // shows the board (0005), and this screen holds no profile, so it
+        // would sit at 0 regardless of how many have answered.
+        <p className="text-2xl font-bold text-mute">
+          Match the room, not the truth.
+        </p>
+      ) : (
+        <div className="rise flex w-full max-w-3xl flex-col gap-3">
+          {panels.map((p) => {
+            const n = p.players.length;
+            const scoring = n > 1;
+            return (
+              <div
+                key={p.key}
+                className="overflow-hidden rounded-2xl border-2 transition-all duration-500"
+                style={{
+                  borderColor: scoring ? ACCENT : "var(--color-line)",
+                  background: `linear-gradient(90deg, color-mix(in oklab, ${ACCENT} 26%, var(--color-ink-2)) ${(n / top) * 100}%, var(--color-ink-2) ${(n / top) * 100}%)`,
+                  boxShadow: scoring
+                    ? `0 0 32px color-mix(in oklab, ${ACCENT} 28%, transparent)`
+                    : undefined,
+                }}
+              >
+                <div className="flex items-center gap-4 px-7 py-5">
+                  <span className="flex-1 text-left text-3xl font-black uppercase tracking-wide">
+                    {p.label}
+                  </span>
+                  <span className="flex -space-x-1">
+                    {p.players.map((id) => (
+                      <span key={id} className="text-3xl">
+                        {seats.find((s) => s.id === id)?.emoji ?? "👤"}
+                      </span>
+                    ))}
+                  </span>
+                  <span
+                    className="w-24 shrink-0 text-right text-2xl font-black tabular-nums"
+                    style={{ color: scoring ? ACCENT : "var(--color-mute)" }}
+                  >
+                    {scoring ? `+${(n - 1) * PER_MATCH}` : "—"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          {panels.length === 0 && (
+            <p className="text-2xl text-mute">Nobody answered this one.</p>
+          )}
+        </div>
+      )}
+    </TvShell>
+  );
+}
+
 export const surveySays: GameModule = {
   id: "survey_says",
   title: "Survey Says",
@@ -304,4 +408,5 @@ export const surveySays: GameModule = {
     await call("set_phase", { p_round: roundId, p_phase: "play" });
   },
   PhoneView: Phone,
+  TvView: Tv,
 };

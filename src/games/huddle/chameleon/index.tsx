@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
-import type { GameModule } from "@/lib/game/types";
+import type { GameModule, GameViewProps } from "@/lib/game/types";
 import { GameShell, PrimaryButton, WaitingOnHost } from "@/components/play/GameShell";
 import { PersonVote } from "@/components/play/PersonVote";
 import { RoundTimer } from "@/components/play/RoundTimer";
+import { TvShell, TvPersonCard } from "@/components/play/TvShell";
 import { CHAMELEON_GRIDS } from "@/config/decks";
 
 /**
@@ -307,6 +308,136 @@ function Phone() {
   );
 }
 
+const TV_ACCENT = "#4ade80";
+
+/**
+ * TV: the grid, big, in the middle of the room.
+ *
+ * The single best argument for a screen in this whole app — sixteen words
+ * everyone has to hold in their head at once while reading each other.
+ * On phones each player squints at their own copy; here it's one board
+ * the whole room looks up at, which is also what makes the chameleon's
+ * eyes flicking across it visible to everybody.
+ *
+ * WHY THIS CAN'T LEAK THE WORD: the secret is dealt by deal_roles into a
+ * `visible_to`-scoped round_items row, and the TV never claims a profile
+ * (see /tv's page.tsx — no <Gate>), so `my_player_id()` is null for this
+ * client and round_items' RLS (0005) matches only `visible_to is null`.
+ * The TV is structurally incapable of receiving any player's card. The
+ * word only arrives at the reveal, via round_secrets.payload.shared,
+ * which opens on phase the same way it does for the phones.
+ */
+function Tv({ round }: GameViewProps) {
+  const { roster } = usePlayer();
+  const { items, votes, secrets } = useRoom();
+
+  const deckItem = items.find((i) => i.kind === "deck" && i.visible_to === null);
+  const words = useMemo(() => {
+    if (!deckItem) return [];
+    try {
+      const parsed = JSON.parse(deckItem.content) as unknown;
+      return Array.isArray(parsed) ? (parsed as string[]) : [];
+    } catch {
+      return [];
+    }
+  }, [deckItem]);
+
+  const topic = typeof deckItem?.meta?.topic === "string" ? deckItem.meta.topic : undefined;
+  const voting = round.phase === "vote";
+  const revealed = round.phase === "reveal" || round.phase === "done";
+
+  const secret = secrets.find((s) => s.idx === 0);
+  const chameleonPlayer = roster.find((p) => p.id === secret?.author);
+  const word = (secret?.payload as { shared?: string } | undefined)?.shared;
+  const here = votes.filter((v) => v.idx === 0);
+  const caught = here.filter((v) => v.value === secret?.author).length;
+  const survived = secret?.author ? caught * 2 <= here.length : false;
+
+  if (!deckItem) {
+    return (
+      <TvShell icon="🦎" title="The Chameleon" accent={TV_ACCENT} gameId="chameleon">
+        <p className="text-3xl font-bold text-mute">Dealing the grid…</p>
+      </TvShell>
+    );
+  }
+
+  return (
+    <TvShell
+      icon="🦎"
+      title="The Chameleon"
+      accent={TV_ACCENT}
+      gameId="chameleon"
+      meta={topic ? `Topic: ${topic}` : undefined}
+    >
+      {/* The grid is the whole screen while they're talking, then gets out
+          of the way so the reveal card fits — four rows of 4:3 tiles plus a
+          person card is taller than a 900px TV, which cropped the reveal
+          off the bottom entirely. */}
+      <div
+        className={`rise grid w-full grid-cols-4 gap-3 transition-all duration-500 ${
+          revealed ? "max-w-2xl" : "max-w-3xl"
+        }`}
+      >
+        {words.map((w, i) => {
+          const isWord = revealed && word === w;
+          return (
+            <div
+              key={`${w}-${i}`}
+              className={`flex items-center justify-center rounded-2xl border-2 px-2 text-center font-bold leading-tight transition-all duration-500 ${
+                revealed ? "py-3 text-base" : "aspect-[4/3] text-xl"
+              }`}
+              style={{
+                borderColor: isWord ? TV_ACCENT : "var(--color-line)",
+                background: isWord
+                  ? `color-mix(in oklab, ${TV_ACCENT} 22%, transparent)`
+                  : "var(--color-ink-2)",
+                color: isWord ? TV_ACCENT : undefined,
+                boxShadow: isWord
+                  ? `0 0 40px color-mix(in oklab, ${TV_ACCENT} 40%, transparent)`
+                  : undefined,
+              }}
+            >
+              {w}
+            </div>
+          );
+        })}
+      </div>
+
+      {!voting && !revealed && (
+        <>
+          <RoundTimer seconds={WORD_PHASE_SECONDS} className="text-6xl leading-none" />
+          <p className="text-xl text-mute">One word each. No repeats.</p>
+        </>
+      )}
+
+      {voting && (
+        // Votes are sealed until the reveal, and this screen holds no
+        // profile, so a tally here would read 0 the whole time.
+        <p className="text-2xl font-bold text-mute">Who&apos;s the chameleon?</p>
+      )}
+
+      {revealed && chameleonPlayer && (
+        <>
+          <TvPersonCard
+            emoji={chameleonPlayer.emoji}
+            name={chameleonPlayer.name}
+            caption="was the chameleon"
+            color={chameleonPlayer.color}
+          />
+          <p className="rise text-2xl font-bold text-mute">
+            {caught} of {here.length} caught them —{" "}
+            {survived ? (
+              <span style={{ color: TV_ACCENT }}>they survived, +250</span>
+            ) : (
+              "the room got them"
+            )}
+          </p>
+        </>
+      )}
+    </TvShell>
+  );
+}
+
 export const chameleon: GameModule = {
   id: "chameleon",
   title: "The Chameleon",
@@ -343,4 +474,5 @@ export const chameleon: GameModule = {
     await call("set_phase", { p_round: roundId, p_phase: "play" });
   },
   PhoneView: Phone,
+  TvView: Tv,
 };

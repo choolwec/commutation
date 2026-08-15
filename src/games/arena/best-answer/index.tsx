@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
-import type { GameModule } from "@/lib/game/types";
+import type { GameModule, GameViewProps } from "@/lib/game/types";
 import { GameShell, PrimaryButton, WaitingOnHost } from "@/components/play/GameShell";
 import { SubmissionVote } from "@/components/play/SubmissionVote";
+import { TvShell } from "@/components/play/TvShell";
 import { BEST_ANSWER_PROMPTS } from "@/config/decks";
 
 /**
@@ -177,6 +178,109 @@ function Phone() {
   );
 }
 
+/**
+ * TV: the prompt, the answers, then the votes landing on them.
+ *
+ * This is the most TV-shaped game in the app and had no board at all —
+ * everyone was reading five answers off their own 6-inch screen while
+ * sitting in the same room. Now the answers go up big during voting
+ * (authors hidden, exactly as the phones have them), and at the reveal
+ * each one grows a vote bar and the winner gets crowned.
+ *
+ * The phases it reads are the phones' own: `submissions` only becomes
+ * visible to anyone once the host flips show_submissions (set_reveal),
+ * so there's no window where this screen could out-run the room.
+ */
+function Tv({ round }: GameViewProps) {
+  const { roster } = usePlayer();
+  const { items, submissions, votes } = useRoom();
+  const cursor = round.item_cursor;
+  const item = items.find((i) => i.idx === cursor && i.visible_to === null);
+  const total = useMemo(() => new Set(items.map((i) => i.idx)).size || 1, [items]);
+
+  const revealed = round.phase === "reveal" || round.phase === "done";
+  const here = submissions.filter((s) => s.idx === cursor);
+  const votesHere = votes.filter((v) => v.idx === cursor);
+  const countFor = (id: string) => votesHere.filter((v) => v.value === id).length;
+  const most = Math.max(0, ...here.map((s) => countFor(s.id)));
+
+  if (!item) {
+    return (
+      <TvShell icon="⚡" title="Best Answer" accent={GLOW} gameId="best_answer">
+        <p className="text-3xl font-bold text-mute">Dealing prompts…</p>
+      </TvShell>
+    );
+  }
+
+  return (
+    <TvShell
+      icon="⚡"
+      title="Best Answer"
+      accent={GLOW}
+      gameId="best_answer"
+      meta={`Prompt ${cursor + 1} of ${total}`}
+    >
+      <p className="rise max-w-4xl text-5xl font-black leading-tight">{item.content}</p>
+
+      {round.phase === "play" && (
+        // Not a progress counter: submissions are sealed to their author
+        // until the host opens them (0005), and this screen holds no
+        // profile at all, so any count here would sit at 0 all round.
+        <p className="text-2xl font-bold text-mute">Writing on their phones…</p>
+      )}
+
+      {(round.phase === "vote" || revealed) && here.length > 0 && (
+        <div className="rise flex w-full max-w-3xl flex-col gap-3">
+          {here
+            .slice()
+            .sort((a, b) => (revealed ? countFor(b.id) - countFor(a.id) : 0))
+            .map((s) => {
+              const n = countFor(s.id);
+              const winning = revealed && n > 0 && n === most;
+              const author = roster.find((p) => p.id === s.player_id);
+              return (
+                <div
+                  key={s.id}
+                  className="overflow-hidden rounded-2xl border-2 transition-all duration-500"
+                  style={{
+                    borderColor: winning ? GLOW : "var(--color-line)",
+                    background: revealed
+                      ? `linear-gradient(90deg, color-mix(in oklab, ${GLOW} 24%, var(--color-ink-2)) ${most ? (n / most) * 100 : 0}%, var(--color-ink-2) ${most ? (n / most) * 100 : 0}%)`
+                      : "var(--color-ink-2)",
+                    boxShadow: winning
+                      ? `0 0 40px color-mix(in oklab, ${GLOW} 35%, transparent)`
+                      : undefined,
+                  }}
+                >
+                  <div className="flex items-center gap-4 px-7 py-5 text-left">
+                    <span className="flex-1 text-2xl font-bold">{s.value}</span>
+                    {revealed && (
+                      <>
+                        <span className="text-lg text-mute">
+                          {author?.emoji} {author?.name}
+                        </span>
+                        <span
+                          className="w-16 shrink-0 text-right text-3xl font-black tabular-nums"
+                          style={{ color: n > 0 ? GLOW : "var(--color-mute)" }}
+                        >
+                          {winning ? "👑" : n}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      )}
+
+      {round.phase === "vote" && (
+        <p className="text-2xl font-bold text-mute">Vote for the best one.</p>
+      )}
+    </TvShell>
+  );
+}
+
 export const bestAnswer: GameModule = {
   id: "best_answer",
   title: "Best Answer",
@@ -224,4 +328,5 @@ export const bestAnswer: GameModule = {
     });
   },
   PhoneView: Phone,
+  TvView: Tv,
 };
