@@ -13,11 +13,15 @@ count is now **25**, not 16); **updated again 14 Aug 2026, later the same day**
 for the art pass (see §16 — Drawful also got its bespoke `TvView`, closing an
 item §12/§13 had both flagged as outstanding); **updated again night of
 14→15 Aug 2026** for a second overnight polish pass (see §17 — nine more
-bespoke TvViews, four real gameplay bugs found and fixed (including one in
-Mafia that made its core night-vote mechanic completely unplayable, in two
-parts — the second only surfaced on re-verification), and the app's first
-sound effects). If it's later than that, treat anything time-sensitive below (survey counts,
-"not yet built") as stale and re-verify rather than trust it.
+bespoke TvViews, four real gameplay bugs found and fixed across six commits
+— Mafia's night-vote mechanic was completely unplayable, in two parts, the
+second only surfacing on re-verification; **Drawful's drawing canvas was
+completely unreachable for every artist, on every turn — the whole game was
+unplayable, not just its turn counter, which is the part an earlier fix
+that same night had already (incompletely) addressed** — and the app's
+first sound effects). If it's later than that, treat anything time-sensitive
+below (survey counts, "not yet built") as stale and re-verify rather than
+trust it.
 
 ---
 
@@ -1061,11 +1065,18 @@ rather than a gap.
 ### Stream one — the bug hunt (§5 of the brief), and what it actually found
 
 The brief was explicit that this is the highest-value stream, and it
-proved out: **four real, previously-unknown bugs**, three of them
-severe enough that they would have surfaced live on Saturday, not in a
-screenshot. All four were found by actually clicking through a full round
-in a real browser — none of them were visible from reading one screen, and
-none of them threw, typechecked wrong, or showed up in `npm run lint`.
+proved out: **four real, previously-unknown bugs across four games**, one
+of them (Mafia) with a second part that only surfaced on re-verification,
+and another (Drawful) that turned out to have a *second, more severe* bug
+hiding behind the first — six fixes in total. Three of the four incidents
+were severe enough that they would have surfaced live on Saturday, not in
+a screenshot; one of those (Drawful) would have made an entire game
+completely unplayable. All were found by actually clicking through a full
+round in a real browser, several only after deliberately forcing a
+throwaway test account into the specific seat (subject, artist, mafia)
+where the bug actually lived rather than trusting a random draw to land
+there — none of them were visible from reading one screen, and none of
+them threw, typechecked wrong, or showed up in `npm run lint`.
 
 **The method, since it's worth keeping for next time:** a throwaway
 Playwright harness (`scripts/_bughunt.mjs` + `scripts/_bughunt_games.mjs`,
@@ -1149,7 +1160,33 @@ describes — worth remembering the shape of, not just the fix.
    `src/games/arena/drawful/index.tsx` — fixed by dealing one public
    `deal_deck` marker per turn, copying the pattern the other four
    private-item games already use correctly. Verified live: the turn
-   counter reads "Turn 1 of 6" now, not "Turn 1 of 1".
+   counter reads "Turn 1 of 6" now, not "Turn 1 of 1". **This fix's own
+   live verification never actually exercised the artist's device** — every
+   test that night landed on a non-artist view, which turned out not to be
+   bad luck: a second, far more severe bug in the same file meant that was
+   the *only* kind of device that could ever exist. `promptItem` was found
+   via `i.kind === "role"` — but `deal_private()` (0007), the only thing
+   Drawful ever calls to deal a prompt, always inserts `kind: 'private'`.
+   `'role'` is `deal_roles()`'s tag (Spyfall/Chameleon/Mafia's odd-one-out
+   primitive) — a different function this game never calls. `promptItem`
+   could therefore never resolve to anything, for anyone, on any turn:
+   `iAmArtist` was permanently `false`, the drawing canvas could never
+   render, and the whole game could never advance past "someone's drawing"
+   for even the very first turn, since no submission could ever exist to
+   open voting on. **Drawful, as shipped up to this point, was completely
+   unplayable — the turn-count fix made the counter correct on a game
+   nobody could actually play a single turn of.** Found by deliberately
+   forcing a throwaway test profile into the artist seat (the same
+   `round_items.visible_to` database swap already used for Mafia and
+   Chameleon this session) rather than trusting a 1-in-6-or-so chance of a
+   random claim landing there on its own — which is exactly the odds that
+   let it hide behind a clean-looking pass all night. Fixed by matching the
+   check to what `deal_private` actually writes: `kind === "private"`.
+   Verified live end to end this time: the artist's prompt and canvas
+   render, a drawing submits successfully (confirmed via a direct
+   `submissions` table read — `kind: 'drawing'`, correct `player_id`), and
+   the host's dock correctly progresses to "Drawing's in → everyone titles
+   it" afterward.
 3. **Both Buzz In variants showed every player — not just the host — a live
    "Next →" button that silently failed for anyone who tapped it.**
    `BuzzHost` (`src/games/arena/buzz-in/shared.tsx`, shared by Trivia and
