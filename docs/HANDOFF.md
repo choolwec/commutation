@@ -1364,19 +1364,24 @@ Throwaway script (`scripts/_evidence_check.mjs`), deleted after use.
 `npm run build` (all 9 routes prerender), `npm run check:engine`
 (18 checks), and `npm run check` (12 checks, once the rate limit cleared
 around 04:55 — see above) all pass clean at the tip, including after the
-sound system landed. Every change above — five bug fixes plus the sound
-system — was pushed as its own commit, watched through `gh run watch` to
-a successful deploy, then confirmed with `npm run live` before moving to
-the next — the live site was never left broken.
+sound system landed. Every change above — six bug fixes across four
+incidents, plus the sound system — was pushed as its own commit, watched
+through `gh run watch` to a successful deploy, then confirmed with
+`npm run live` before moving to the next — the live site was never left
+broken. `/awards` also got a direct live check (a throwaway claim,
+screenshotted against the real — currently all-zero, pre-event —
+leaderboard): renders cleanly, zero errors, and correctly hides every
+award card rather than showing a broken one when nobody has scored yet.
 
 ### Still open
 
 - **A richer Awards/hub "moment" polish** — the countdown hitting zero, the
   Awards screen's own weight — called out by the brief, not attempted
-  beyond what already existed (both already have hero art from §16 and
-  function correctly; deeper choreography wasn't judged worth the risk this
-  late relative to its value). Sound (§7's other ask) did get built — see
-  stream two/three above.
+  beyond what already existed (both already have hero art from §16, render
+  correctly, and are now confirmed live rather than just read; deeper
+  choreography wasn't judged worth the risk this late relative to its
+  value). Sound (§7's other ask) did get built — see stream two/three
+  above.
 - **Real six-tab dress rehearsal on real iPhones, and the bypass
   code/venue** — same items every session since §12 has carried forward;
   still the bar, still Choolwe's own to run. Venue is done (§10 of
