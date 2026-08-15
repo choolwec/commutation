@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePlayer } from "@/lib/player";
-import { useRoom, useCurrentItems } from "@/lib/game/room";
+import { useRoom } from "@/lib/game/room";
 import type { GameModule } from "@/lib/game/types";
 import { GameShell, ContentCard, PrimaryButton, WaitingOnHost } from "@/components/play/GameShell";
 import { PersonVote } from "@/components/play/PersonVote";
@@ -28,9 +28,20 @@ const MAFIA_ROLE = "You are the MAFIA. Each night, secretly pick someone to elim
 const TOWN_ROLE = "You are a TOWNSPERSON. Find the Mafia before they pick everyone off.";
 
 function Phone() {
-  const { roster } = usePlayer();
-  const { round, secrets, votes, isHost, call } = useRoom();
-  const myRole = useCurrentItems().find((i) => i.kind === "role");
+  const { me, roster } = usePlayer();
+  const { round, items, secrets, votes, isHost, call } = useRoom();
+  // NOT useCurrentItems(): that filters to items.idx === item_cursor, but
+  // Mafia repurposes item_cursor as its own night/day counter (isNight,
+  // below) rather than an item index — unlike Spyfall/Chameleon, which deal
+  // an identical role card at idx 0 but never advance the cursor at all, so
+  // this mismatch never bit them. Mafia's role card is dealt once, always at
+  // idx 0 (deal_roles, 0007), and needed for the WHOLE game — so it has to
+  // be found by kind alone, cursor-independent, or it silently disappears
+  // (and "Loading your role…" shows forever) the moment night one ends and
+  // the cursor first advances to 1. This is also what iAmMafia below reads,
+  // so the mafia-vote fix a few lines down would have quietly broken again
+  // on day one without this.
+  const myRole = items.find((i) => i.kind === "role");
   const cursor = round?.item_cursor ?? 0;
   const isNight = cursor % 2 === 0;
 
@@ -153,7 +164,13 @@ function Phone() {
             <p className="mb-3 text-center text-xs font-bold uppercase tracking-wider text-mute">
               Choose your target
             </p>
-            <PersonVote idx={cursor} exclude={mafiaId ? [mafiaId] : []} />
+            {/* Excluding "myself" from the target list can't come from
+                mafiaId here — that's sourced from secrets, which is sealed
+                until reveal, i.e. null at exactly the moment this renders.
+                me.id is always known, and this branch only ever renders for
+                the mafia player (iAmMafia gates it above), so it's the same
+                exclusion, just from a source that's actually available yet. */}
+            <PersonVote idx={cursor} exclude={me ? [me.id] : []} />
           </div>
         )}
         {!winner && isNight && !iAmMafia && !revealed && (
