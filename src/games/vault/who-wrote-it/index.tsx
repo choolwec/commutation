@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
-import type { GameModule } from "@/lib/game/types";
+import type { GameModule, GameViewProps } from "@/lib/game/types";
 import {
   ContentCard,
   GameShell,
@@ -11,6 +11,7 @@ import {
   WaitingOnHost,
 } from "@/components/play/GameShell";
 import { PersonVote } from "@/components/play/PersonVote";
+import { TvShell, TvPersonCard } from "@/components/play/TvShell";
 
 /**
  * WHO WROTE IT? — the centerpiece. PLAN.md: "the reveals only land if
@@ -145,6 +146,90 @@ function useTotalItems() {
   return useMemo(() => new Set(items.map((i) => i.idx)).size || 1, [items]);
 }
 
+const TV_ACCENT = "#dc2626";
+
+/**
+ * TV: the confession, then the face.
+ *
+ * The whole app's headline moment, finally on something bigger than a
+ * phone. Before the reveal the screen holds ONLY the confession and a
+ * count of who's guessed — deliberately no vote tally, since seeing the
+ * room converge on a name would pull the undecided along with it. After
+ * the reveal it's the author's face at full size, then who read them
+ * right.
+ *
+ * Nothing here needs a guard against leaking the author early: the TV
+ * reads `secrets` like every other client, and round_secrets' RLS
+ * (migration 0005) returns nothing at all until this round's phase is
+ * `reveal`. There is no author to render before then, even if this
+ * component asked for one.
+ */
+function Tv({ round }: GameViewProps) {
+  const { roster } = usePlayer();
+  const { items, secrets, votes } = useRoom();
+  const cursor = round.item_cursor;
+  const item = items.find((i) => i.idx === cursor && i.visible_to === null);
+  const total = useMemo(() => new Set(items.map((i) => i.idx)).size || 1, [items]);
+
+  const revealed = round.phase === "reveal" || round.phase === "done";
+  const secret = secrets.find((s) => s.idx === cursor);
+  const writer = roster.find((p) => p.id === secret?.author);
+  const here = votes.filter((v) => v.idx === cursor);
+  const correct = here.filter((v) => v.value === secret?.author);
+
+  if (!item) {
+    return (
+      <TvShell icon="🔒" title="Who Wrote It?" accent={TV_ACCENT} gameId="who_wrote_it">
+        <p className="text-3xl font-bold text-mute">Dealing confessions…</p>
+      </TvShell>
+    );
+  }
+
+  return (
+    <TvShell
+      icon="🔒"
+      title="Who Wrote It?"
+      accent={TV_ACCENT}
+      gameId="who_wrote_it"
+      meta={`Confession ${cursor + 1} of ${total}`}
+    >
+      <p className="rise max-w-4xl text-5xl font-black leading-tight">
+        “{item.content}”
+      </p>
+
+      {!revealed ? (
+        // No "N have guessed" counter here, and there can't be one: votes
+        // stay sealed until the reveal (0005's votes policy), and the TV
+        // claims no profile, so it would read a permanent 0. Deliberately
+        // a prompt rather than a false progress bar.
+        <p className="text-2xl font-bold text-mute">Guess on your phones.</p>
+      ) : writer ? (
+        <>
+          <TvPersonCard
+            emoji={writer.emoji}
+            name={writer.name}
+            caption="wrote it"
+            color={writer.color}
+          />
+          <p className="rise text-2xl font-bold text-mute">
+            {correct.length} of {here.length} guessed right
+            {here.length > correct.length && (
+              <>
+                {" · "}
+                <span style={{ color: TV_ACCENT }}>
+                  +{(here.length - correct.length) * 50} for staying hidden
+                </span>
+              </>
+            )}
+          </p>
+        </>
+      ) : (
+        <p className="text-3xl font-bold text-mute">Nobody claimed this one.</p>
+      )}
+    </TvShell>
+  );
+}
+
 export const whoWroteIt: GameModule = {
   id: "who_wrote_it",
   title: "Who Wrote It?",
@@ -184,4 +269,5 @@ export const whoWroteIt: GameModule = {
     }
   },
   PhoneView: Phone,
+  TvView: Tv,
 };

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
 import { getSupabase } from "@/lib/supabase/client";
-import type { GameModule } from "@/lib/game/types";
+import type { GameModule, GameViewProps } from "@/lib/game/types";
 import { GameShell, GhostButton, PrimaryButton, WaitingOnHost } from "@/components/play/GameShell";
 
 /**
@@ -253,6 +253,84 @@ function Phone() {
   );
 }
 
+/**
+ * TV: the coin, and nothing else.
+ *
+ * Deliberately the only board in the app with no leaderboard rail
+ * (`rail={false}`) — this round is five seconds of everyone staring at
+ * one person's face, and a scoreboard in the corner would undercut it.
+ * The screen holds the tension while the question is private, plays the
+ * SAME coin flip every phone is playing (useCoinFlip, off the shared
+ * round_events row — so the TV lands on the same frame as the room
+ * rather than running its own animation), and then either shows the
+ * question at full size or says, permanently, that it never will.
+ *
+ * The private question can't reach here early for the same structural
+ * reason as Chameleon's word: /tv claims no profile, so `my_player_id()`
+ * is null and round_items' RLS only ever hands this client rows with
+ * `visible_to is null`. reveal_item() nulling that column IS the reveal.
+ */
+function Tv({ round }: GameViewProps) {
+  const { items } = useRoom();
+  const flipping = useCoinFlip();
+  // Only ever the public row — a privately-dealt question is invisible to
+  // this client at the database level, not filtered out here.
+  const item = items.find((i) => i.idx === 0 && i.visible_to === null);
+  const done = round.phase === "done";
+
+  return (
+    <main className="relative grid min-h-dvh place-items-center overflow-hidden p-10">
+      <ParStyle />
+      <Vignette />
+
+      {flipping ? (
+        <div className="flex flex-col items-center gap-8">
+          <div
+            className="par-coin grid h-56 w-56 place-items-center rounded-full border-4 text-8xl"
+            style={{
+              borderColor: "var(--color-gold)",
+              background:
+                "radial-gradient(circle at 35% 30%, color-mix(in oklab, var(--color-gold) 60%, white), var(--color-ink-3))",
+            }}
+          >
+            {flipping === "reveal" ? "👁️" : "🔒"}
+          </div>
+          <p className="text-2xl font-black uppercase tracking-[0.3em] text-mute">
+            {flipping === "reveal" ? "the coin says… reveal" : "the coin says… stays secret"}
+          </p>
+        </div>
+      ) : item ? (
+        <div className="rise flex max-w-4xl flex-col items-center gap-8 text-center">
+          <p className="text-sm font-black uppercase tracking-[0.4em] text-gold">
+            the question was
+          </p>
+          <p
+            className="text-6xl font-black leading-tight"
+            style={{ textShadow: "0 0 60px rgba(255,255,255,0.2)" }}
+          >
+            {item.content}
+          </p>
+        </div>
+      ) : done ? (
+        <div className="rise flex flex-col items-center gap-6 text-center">
+          <span className="text-7xl">🔒</span>
+          <p className="max-w-xl text-3xl font-bold text-mute">
+            That one stayed sealed. Nobody will ever know what was asked.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="h-3 w-3 animate-pulse rounded-full bg-flame" />
+          <p className="max-w-2xl text-4xl font-black leading-snug">
+            Someone&apos;s been asked something.
+          </p>
+          <p className="text-2xl text-mute">Watch their face.</p>
+        </div>
+      )}
+    </main>
+  );
+}
+
 export const paranoia: GameModule = {
   id: "paranoia",
   title: "Paranoia",
@@ -284,4 +362,5 @@ export const paranoia: GameModule = {
     });
   },
   PhoneView: Phone,
+  TvView: Tv,
 };
