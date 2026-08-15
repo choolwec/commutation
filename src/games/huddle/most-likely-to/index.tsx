@@ -11,6 +11,8 @@ import {
   WaitingOnHost,
 } from "@/components/play/GameShell";
 import { PersonVote } from "@/components/play/PersonVote";
+import { MOST_LIKELY_TO } from "@/config/decks";
+import { pickN } from "@/games/common";
 
 /**
  * MOST LIKELY TO — secret vote for a person, live bar-chart reveal.
@@ -188,11 +190,29 @@ export const mostLikelyTo: GameModule = {
   source: { kind: "survey", questionIds: QUESTION_IDS, items: 8 },
   minutes: 10,
   async start({ call }) {
-    await call("start_round", {
-      p_game: "most_likely_to",
-      p_hall: "huddle",
-      p_question_ids: QUESTION_IDS,
-      p_items: 8,
+    // Their own prompts first (section 5, `most_likely_prompt`) — same
+    // sealed-survey path as Who Wrote It?. start_round() only throws if it
+    // deals literally zero (nobody answered that question at all); decks.ts's
+    // own MOST_LIKELY_TO reserve ("The group wrote 14 of their own. These run
+    // after those.") was written for exactly that gap but was never actually
+    // wired up — found doing a pass over unused config exports. Falls back to
+    // it here, same shape Best Answer already uses for its own reserve deck,
+    // so one thin survey question can't take the whole game down.
+    try {
+      await call("start_round", {
+        p_game: "most_likely_to",
+        p_hall: "huddle",
+        p_question_ids: QUESTION_IDS,
+        p_items: 8,
+      });
+      return;
+    } catch {
+      // fall through to the deck
+    }
+    const roundId = await call("start_deck_round", { p_game: "most_likely_to", p_hall: "huddle" });
+    await call("deal_deck", {
+      p_round: roundId,
+      p_items: pickN(MOST_LIKELY_TO, 8).map((content) => ({ content })),
     });
   },
   // Fake prompts — never reads survey_responses, see who-wrote-it's

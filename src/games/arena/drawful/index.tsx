@@ -258,6 +258,25 @@ export const drawful: GameModule = {
     const roundId = await call("start_deck_round", { p_game: "drawful", p_hall: "arena" });
     const prompts = shuffle(DRAWFUL_PROMPTS).slice(0, claimed.length);
 
+    // A public marker per turn (one per artist), same as Act It Out/Spell It
+    // Out/30 Seconds/Speed Cards all already do. Every OTHER item this round
+    // deals is visible_to-scoped (deal_private) — with nothing public, both
+    // useTotalItems() here and in TvView.tsx count zero-or-one distinct idx
+    // no matter how many turns actually exist (a phone only ever sees its
+    // OWN private row; /tv holds no profile and sees none at all), which
+    // pins `total` at 1 for literally every device, the whole round. That
+    // makes `isLast = cursor >= total - 1` true from turn 1 onward, so the
+    // host's "Next turn" button silently behaves as "Finish round" and the
+    // game ends after the very first artist — found via a bug-hunt pass
+    // that actually clicked through a full round rather than eyeballing one
+    // turn (POLISH_BRIEF §5). The marker carries nothing secret — content is
+    // a static placeholder — it exists purely so every device (including
+    // the TV) can see how many turns this round actually has.
+    await call("deal_deck", {
+      p_round: roundId,
+      p_items: claimed.map((p) => ({ content: "drawing", meta: { artist: p.id } })),
+    });
+
     for (let i = 0; i < claimed.length; i++) {
       await call("deal_private", {
         p_round: roundId,
