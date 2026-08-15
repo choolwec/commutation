@@ -23,10 +23,9 @@ export const EVENT = {
   dateLabel: "Saturday 15 August",
   timeLabel: "1:00 – 8:00 PM",
 
-  /** ── PLACEHOLDERS — replace these ─────────────────────────── */
   location: {
-    name: "TBC",
-    address: "Confirmed on Tuesday",
+    name: "BKS Apartments",
+    address: "Main Street, Ibex",
     /** Paste a Google/Apple Maps share link. Empty string hides the button. */
     mapsUrl: "",
     /** Anything useful: gate code, parking, "buzz flat 3", etc. Empty hides it. */
@@ -36,7 +35,7 @@ export const EVENT = {
      * sorted" line on the hub for the real address, so nobody turns up
      * somewhere wrong on the strength of a placeholder.
      */
-    pending: true,
+    pending: false,
   },
 
   /**
