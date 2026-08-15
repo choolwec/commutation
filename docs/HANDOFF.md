@@ -1342,6 +1342,22 @@ section already ruled it out on arrival — "No haptics. The Vibration API
 doesn't exist on Safari, full stop," and all six phones are iPhones — so
 it would be dead code on every device that matters, not a small win.
 
+**The Evidence photo system (§7 — "check it actually works end to end;
+it's the least-exercised feature in the app") got exactly that**, and came
+back completely clean — the one system checked live this session that
+needed no fix at all. `schedule_evidence` itself can't be exercised without
+the real unlock (it's only reachable from the real `Launcher`, gated behind
+`PlayGate`), so this went around it: a single `evidence_prompts` row
+inserted directly for a throwaway player, due immediately, via service-role
+DB access — the same "test data only" boundary as everything else this
+session, never touching the real day's schedule. Confirmed live: the
+overlay renders on the Hub, a fake JPEG actually uploads through
+`useEvidence.ts`'s `toJpeg` re-encode path, `complete_evidence` correctly
+flips the prompt to `status: 'done'`, the resulting `evidence_photos` row
+points at a real object, and that object's public Storage URL actually
+resolves (200) — not just that a database row exists pointing at one.
+Throwaway script (`scripts/_evidence_check.mjs`), deleted after use.
+
 ### Verified, end to end
 
 `npx tsc --noEmit`, `npm run lint` (27-warning baseline, unchanged),
