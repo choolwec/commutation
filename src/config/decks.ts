@@ -54,6 +54,11 @@ export const SPYFALL_LOCATIONS: SpyfallLocation[] = [
   { location: "A cruise ship", roles: ["Captain", "Entertainer", "Passenger who's seasick", "Waiter", "Someone who's lost", "Person at the buffet"] },
   { location: "A market", roles: ["Vegetable seller", "Someone haggling hard", "Pickpocket's lookout", "Person carrying goods", "Regular customer", "Someone just browsing"] },
   { location: "A birthday party for a 6-year-old", roles: ["The birthday child", "Exhausted parent", "The entertainer", "Another parent judging", "Child who wants to go home", "Person who brought the wrong gift"] },
+  { location: "A wedding dress fitting", roles: ["The bride", "Overbearing mother", "The seamstress", "Bridesmaid on her phone", "Shop owner", "Groom who isn't supposed to be there"] },
+  { location: "A traffic stop", roles: ["The police officer", "The driver", "Passenger staying quiet", "Someone filming it", "A second officer", "Person who's late for something"] },
+  { location: "A karaoke bar", roles: ["The DJ", "Person who won't give up the mic", "Someone who can actually sing", "A heckler", "Bartender", "Someone waiting for their turn"] },
+  { location: "A graduation ceremony", roles: ["The graduate", "Proud parent", "Guest speaker", "Someone who lost their gown", "Photographer", "Person clapping too loud"] },
+  { location: "A late-night call centre", roles: ["The agent", "An angry caller", "Team leader", "New trainee", "Someone about to quit", "IT support"] },
 ];
 
 // ─── THE CHAMELEON ──────────────────────────────────────────────────────────
@@ -80,6 +85,10 @@ export const CHAMELEON_GRIDS: ChameleonGrid[] = [
   { topic: "Musicians", words: ["Beyoncé", "Burna Boy", "Drake", "Rihanna", "Wizkid", "Adele", "Kendrick Lamar", "Ed Sheeran", "Tems", "Chris Brown", "Sauti Sol", "Yo Maps", "Davido", "SZA", "Asake", "Michael Jackson"] },
   { topic: "Reasons to be late", words: ["Traffic", "Overslept", "Lost keys", "Phone died", "Family emergency", "Wrong directions", "Waiting for someone", "Rain", "No transport money", "Forgot entirely", "Work", "Got a call", "Wardrobe crisis", "Queue at the shop", "Car trouble", "Time zone confusion"] },
   { topic: "Things you lose", words: ["Keys", "Phone", "Charger", "Umbrella", "Money", "Patience", "Socks", "Earphones", "ID", "Sunglasses", "Password", "Signal", "Weight", "A bet", "Your temper", "Your place in a queue"] },
+  { topic: "Wedding things", words: ["Bouquet", "Vows", "Best man", "Cake", "Rings", "Toast", "Dance floor", "Bridesmaids", "Aisle", "Guest list", "DJ", "Photographer", "Confetti", "Speech", "Honeymoon", "Seating chart"] },
+  { topic: "Kitchen items", words: ["Pot", "Knife", "Spoon", "Fridge", "Stove", "Plate", "Kettle", "Sieve", "Bowl", "Cutting board", "Blender", "Oven mitt", "Tray", "Grater", "Ladle", "Sponge"] },
+  { topic: "Things at church", words: ["Choir", "Sermon", "Offering", "Pastor", "Hymn book", "Pew", "Amen", "Testimony", "Collection plate", "Sunday best", "Bible", "Usher", "Prayer", "Announcements", "Communion", "Altar"] },
+  { topic: "Things in a wallet", words: ["ID card", "Cash", "Bank card", "Receipt", "Photo", "Business card", "Coins", "Loyalty card", "Old ticket", "SIM card", "Lottery ticket", "Note to self", "Stamp", "Membership card", "Spare key", "Expired coupon"] },
 ];
 
 // ─── FIBBAGE ────────────────────────────────────────────────────────────────
@@ -119,6 +128,21 @@ export const FIBBAGE_FACTS: FibbageFact[] = [
   { prompt: "The longest recorded flight of a chicken is 13 ___.", answer: "seconds" },
   { prompt: "Sharks existed before ___ did.", answer: "trees" },
   { prompt: "In Japan there is a Kit Kat flavour made from ___.", answer: "soy sauce" },
+  { prompt: "A shrimp's heart is located in its ___.", answer: "head" },
+  { prompt: "The Great Wall of China is not actually visible from ___ with the naked eye, despite the popular myth.", answer: "space" },
+  { prompt: "A group of crows is called a ___.", answer: "murder" },
+  { prompt: "On Venus, it actually rains ___.", answer: "sulfuric acid" },
+  { prompt: "The inventor of the frisbee had his ashes moulded into ___ after he died, per his own wishes.", answer: "frisbees" },
+  { prompt: "It's the MALE seahorse, not the female, who ___.", answer: "gets pregnant and gives birth" },
+  { prompt: "A single bolt of lightning is hotter than the surface of ___.", answer: "the sun" },
+  { prompt: "A koala's fingerprints are so similar to a human's that they could ___.", answer: "confuse a crime scene" },
+  { prompt: "Butterflies taste things through their ___.", answer: "feet" },
+  { prompt: "The world's shortest scheduled commercial flight lasts under ___.", answer: "2 minutes" },
+  { prompt: "A snail can sleep, or hibernate, for up to ___.", answer: "3 years" },
+  { prompt: "Peanuts are not actually nuts — botanically, they're ___.", answer: "legumes" },
+  { prompt: "Cleopatra lived closer in time to the Moon landing than to ___.", answer: "the building of the Great Pyramids" },
+  { prompt: "Flamingo chicks are actually born ___, not pink.", answer: "grey" },
+  { prompt: "The world's oldest known individual living tree is over ___ years old.", answer: "4,800" },
 ];
 
 // ─── TRIVIA / BUZZ IN ───────────────────────────────────────────────────────
@@ -156,6 +180,32 @@ export const TRIVIA: TriviaQuestion[] = [
   { q: "Apartheid-era South Africa was banned from the Olympics for how many straight Games?", options: ["3", "5", "7", "9"], answer: 2 },
   { q: "Which vitamin does your body make from sunlight?", options: ["Vitamin A", "Vitamin B12", "Vitamin C", "Vitamin D"], answer: 3 },
   { q: "What do the interior angles of a hexagon add up to?", options: ["540°", "600°", "720°", "900°"], answer: 2 },
+  { q: "Which African country has more pyramids than Egypt?", options: ["Ethiopia", "Sudan", "Libya", "Chad"], answer: 1 },
+  { q: "What is the largest lake in Africa by surface area?", options: ["Lake Tanganyika", "Lake Victoria", "Lake Malawi", "Lake Turkana"], answer: 1 },
+  { q: "Which planet has a day longer than its year?", options: ["Mercury", "Venus", "Mars", "Uranus"], answer: 1 },
+  { q: "In what year did Zambia gain independence?", options: ["1960", "1964", "1968", "1972"], answer: 1 },
+  { q: "Which country has won the most Africa Cup of Nations titles?", options: ["Cameroon", "Egypt", "Nigeria", "Ghana"], answer: 1 },
+  { q: "What is the smallest planet in our solar system?", options: ["Mars", "Venus", "Mercury", "Neptune"], answer: 2 },
+  { q: "How many keys does a standard piano have?", options: ["76", "84", "88", "92"], answer: 2 },
+  { q: "Which country produces the most coffee in the world?", options: ["Colombia", "Vietnam", "Brazil", "Ethiopia"], answer: 2 },
+  { q: "How many official time zones does mainland China use, despite spanning five geographically?", options: ["1", "2", "3", "5"], answer: 0 },
+  { q: "Which language is official in the most African countries?", options: ["Swahili", "French", "Arabic", "English"], answer: 1 },
+  { q: "Which vitamin deficiency causes scurvy?", options: ["Vitamin A", "Vitamin B12", "Vitamin C", "Vitamin D"], answer: 2 },
+  { q: "What is the tallest mountain in Africa?", options: ["Mount Kenya", "Mount Kilimanjaro", "Rwenzori", "Table Mountain"], answer: 1 },
+  { q: "Which Zambian city is the largest on the Copperbelt?", options: ["Kitwe", "Ndola", "Chingola", "Mufulira"], answer: 0 },
+  { q: "How many bones does a shark's skeleton contain?", options: ["Zero — it's all cartilage", "About 50", "About 150", "About 300"], answer: 0 },
+  { q: "What is the most abundant metal in the Earth's crust?", options: ["Iron", "Copper", "Aluminium", "Gold"], answer: 2 },
+  { q: "Which country hosted the first ever FIFA World Cup, in 1930?", options: ["Brazil", "Uruguay", "Italy", "France"], answer: 1 },
+  { q: "How many strings does a standard violin have?", options: ["3", "4", "5", "6"], answer: 1 },
+  { q: "What does 'Wi-Fi' actually stand for?", options: ["Wireless Fidelity", "It's not an acronym for anything", "Wide Frequency", "Wireless Field"], answer: 1 },
+  { q: "Which African country was formerly known as Rhodesia?", options: ["Zambia", "Zimbabwe", "Malawi", "Botswana"], answer: 1 },
+  { q: "What is the freezing point of water in Fahrenheit?", options: ["0°F", "32°F", "100°F", "212°F"], answer: 1 },
+  { q: "Which sea creature has blue blood?", options: ["Octopus", "Horseshoe crab", "Jellyfish", "Starfish"], answer: 1 },
+  { q: "How many countries share a border with Zambia?", options: ["6", "8", "10", "12"], answer: 1 },
+  { q: "Which artist wrote and recorded 'Purple Rain'?", options: ["Michael Jackson", "Prince", "Stevie Wonder", "George Clinton"], answer: 1 },
+  { q: "What is the driest hot desert in the world?", options: ["Sahara", "Gobi", "Atacama", "Kalahari"], answer: 2 },
+  { q: "Which organ in the human body regenerates itself completely?", options: ["Heart", "Liver", "Kidney", "Lungs"], answer: 1 },
+  { q: "What is the national sport of Kenya, in terms of Olympic dominance?", options: ["Football", "Boxing", "Long-distance running", "Swimming"], answer: 2 },
 ];
 
 // ─── DRAWFUL ────────────────────────────────────────────────────────────────
@@ -203,6 +253,22 @@ export const DRAWFUL_PROMPTS: string[] = [
   "Someone who thinks they're funny",
   "A pigeon with a secret",
   "The feeling of stepping on a plug",
+  "A minibus conductor who has seen everything",
+  "The last person to leave a wedding",
+  "A goat that just found out the truth",
+  "Someone who peaked in high school",
+  "The concept of load shedding",
+  "A fridge with nothing in it but sauce",
+  "Someone who just lied to your face",
+  "A rooster with anger issues",
+  "The feeling of your phone dying at 1%",
+  "A very suspicious handshake",
+  "Someone pretending the Wi-Fi password worked",
+  "A landlord who's avoiding you",
+  "The last slice of cake nobody wants to take",
+  "A dog that knows it did something wrong",
+  "Someone who just realised they replied-all",
+  "A church usher enforcing silence",
 ];
 
 // ─── BEST ANSWER (Quiplash-style) ───────────────────────────────────────────
@@ -237,6 +303,21 @@ export const BEST_ANSWER_PROMPTS: string[] = [
   "The worst possible first line of a speech",
   "What your phone would say about you in court",
   "A terrible theme for a wedding",
+  "The worst thing to say at your own graduation",
+  "A terrible slogan for a minibus company",
+  "What your fridge would say if it could talk",
+  "The real reason you're still single",
+  "A bad excuse for not replying to a text for three days",
+  "The worst possible thing to hear during a job performance review",
+  "What your search history says about your last breakup",
+  "A terrible name for a new phone model",
+  "The worst thing to whisper during a wedding vow",
+  "What your pet would post if it had social media",
+  "A rejected excuse for missing church",
+  "The worst possible caption for a family photo",
+  "What you'd tell your younger self, badly",
+  "A terrible pickup line that somehow works",
+  "The real reason the meeting could have been an email",
 ];
 
 // ─── NEVER HAVE I EVER ──────────────────────────────────────────────────────
@@ -256,6 +337,12 @@ export const NEVER_HAVE_I_EVER = {
     "Never have I ever texted \"on my way\" before I'd even left the house",
     "Never have I ever stalked someone's social media the night before meeting them",
     "Never have I ever practiced a conversation in the mirror before actually having it",
+    "Never have I ever pretended to like a gift I actually hated",
+    "Never have I ever left a voice note longer than three minutes",
+    "Never have I ever googled someone right before meeting them",
+    "Never have I ever answered a call by accident and had to pretend it was on purpose",
+    "Never have I ever screenshotted a conversation to send to someone else",
+    "Never have I ever shown up somewhere just to see who else was there",
   ],
   real: [
     "Never have I ever lied about where I was",
@@ -270,6 +357,12 @@ export const NEVER_HAVE_I_EVER = {
     "Never have I ever fallen for someone based on their voice or texting alone",
     "Never have I ever rehearsed how I'd respond if someone confessed feelings for me",
     "Never have I ever unfollowed someone specifically to get over them",
+    "Never have I ever liked someone I knew my friends wouldn't approve of",
+    "Never have I ever kept a conversation going just to keep the option open",
+    "Never have I ever compared someone new to someone I wasn't over",
+    "Never have I ever made plans just hoping a specific person would be there",
+    "Never have I ever read into a reply for way longer than it deserved",
+    "Never have I ever pulled away first because I got scared, not because I stopped caring",
   ],
   reckless: [
     "Never have I ever had a crush on a friend's sibling",
@@ -284,6 +377,12 @@ export const NEVER_HAVE_I_EVER = {
     "Never have I ever been someone's rebound and known it at the time",
     "Never have I ever had a situationship I never fully explained to anyone",
     "Never have I ever caught real feelings from something that was supposed to be casual",
+    "Never have I ever compared two people in this room, even just in my head",
+    "Never have I ever stayed close to someone specifically to stay close to who they know",
+    "Never have I ever known exactly how someone felt about me and pretended not to",
+    "Never have I ever let a joke about feelings land closer to the truth than I meant it to",
+    "Never have I ever chosen the safer option in love and regretted it later",
+    "Never have I ever been the reason two people in my life stopped talking",
   ],
 } as const;
 
@@ -302,6 +401,10 @@ export const TRUTHS = {
     "What's the pettiest reason you've ever gone off someone?",
     "Who here gives the best 'meet-my-parents-first' first impression?",
     "What's a lie you've told to get out of a date — or into one?",
+    "Who's the last person you texted 'wyd' with no actual reason?",
+    "What's the most obvious thing you've ever pretended not to notice?",
+    "Who in this room has the best glow-up since you first met them?",
+    "What's a habit of yours that would make dating you slightly harder?",
   ],
   real: [
     "Who in this room do you think is the most charming, and why them specifically?",
@@ -312,6 +415,10 @@ export const TRUTHS = {
     "Who in this room do you think would be hardest to get over?",
     "What's something you've never forgiven an ex for?",
     "Who here do you think reads people best, and what have they probably picked up on about you?",
+    "What's a relationship pattern you keep repeating, even when you can see it happening?",
+    "Who's someone you had to talk yourself out of liking, and did it actually work?",
+    "What's the real reason your longest situationship never became official?",
+    "Who in this room do you think would give the most honest relationship advice, even if it hurt?",
   ],
   reckless: [
     "Name the person in this room you'd most likely fall for in a different life, and give one real reason.",
@@ -322,6 +429,10 @@ export const TRUTHS = {
     "Who here would you take a second look at if you were meeting them for the first time tonight?",
     "What's a 'type' you have that nobody in this room would guess?",
     "Who's the one person in this room you've never been able to fully read — and does that intrigue you?",
+    "What's the closest you've come to telling someone in this room how you actually feel?",
+    "Who here would you take a genuine second chance with, if the timing had been different?",
+    "What's a real feeling you've had for someone this year that nobody in this room knows about?",
+    "Who in this room could talk you into almost anything, and have you noticed?",
   ],
 } as const;
 
@@ -335,6 +446,10 @@ export const DARES = {
     "Post 'feeling single and ready to mingle' as your status until your next turn",
     "Do a dramatic slow-motion entrance across the room like you're about to confess your love to someone here",
     "Look someone in this room dead in the eye and tell them the one thing you'd change about them if you could — kindly, but honestly",
+    "Do a full 15-second red-carpet interview about yourself, third person, maximum ego",
+    "Let the room caption a screenshot of your camera roll — you don't get to pick which one",
+    "Give a toast to the person on your left as if they just won an award for existing",
+    "Act out your most dramatic reaction to good news, silent movie style, no words allowed",
   ],
   real: [
     "Read out your last five text messages, sender names included",
@@ -345,6 +460,10 @@ export const DARES = {
     "Sing one verse of a song the room picks like you mean every word, maintaining eye contact with one person in this room the whole time",
     "Reveal who's saved in your phone under a nickname, and what the nickname is",
     "Send a voice note to the group chat confessing your most embarrassing celebrity crush",
+    "Let the room scroll your camera roll for 10 seconds and describe out loud what they find",
+    "Confess, dead serious, the last time you cried and why — no downplaying it",
+    "Do your best impression of someone else in this room until they guess who",
+    "Text your family group chat something the room writes, no edits",
   ],
   reckless: [
     "Text the last person you had a crush on exactly what the room tells you to say",
@@ -355,6 +474,10 @@ export const DARES = {
     "Do your most dramatic 'this is my villain origin story' monologue about your worst rejection",
     "Read today's horoscope out loud, directed at whoever the room points to, like it's a declaration of love",
     "The room picks one person here — give them a genuine, unjoking compliment for 30 seconds straight, no breaking eye contact",
+    "Rank everyone in this room, out loud, from 'would trust with a secret' to 'would find out from a group chat'",
+    "Show the room the actual last five songs you played, no skipping the embarrassing one",
+    "Tell the room the last thing you said about someone here when they weren't around",
+    "Answer whatever the room's most-asked unanswered question about you is — they decide what it is first",
   ],
 } as const;
 
@@ -378,6 +501,14 @@ export const HOT_TAKE_SPECTRUMS: [string, string][] = [
   ["Bad advice", "Good advice"],
   ["Guilty pleasure", "Actual quality"],
   ["Waste of money", "Worth every kwacha"],
+  ["Petty", "Justified"],
+  ["A phase", "Who they really are"],
+  ["Toxic", "Just honest"],
+  ["Cringe", "Confident"],
+  ["A dealbreaker", "Not a big deal"],
+  ["Basic", "A classic"],
+  ["Try-hard", "Effortless"],
+  ["A coincidence", "Fate"],
 ];
 
 // ─── ACT IT OUT (charades) ──────────────────────────────────────────────────

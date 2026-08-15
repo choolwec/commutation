@@ -34,6 +34,9 @@ export const NAME_THAT_TUNE: TuneEntry[] = [
   { title: "Are You That Somebody?", artist: "Aaliyah" },
   { title: "Too Close", artist: "Next" },
   { title: "Return of the Mack", artist: "Mark Morrison" },
+  { title: "No One", artist: "Alicia Keys" },
+  { title: "Yeah!", artist: "Usher ft. Lil Jon & Ludacris" },
+  { title: "1, 2 Step", artist: "Ciara ft. Missy Elliott" },
 
   // ── 2014+ hip-hop / rap ──────────────────────────────────────────────────
   { title: "Uptown Funk", artist: "Mark Ronson ft. Bruno Mars" },
@@ -45,6 +48,7 @@ export const NAME_THAT_TUNE: TuneEntry[] = [
   { title: "Old Town Road", artist: "Lil Nas X" },
   { title: "rockstar", artist: "Post Malone ft. 21 Savage" },
   { title: "WAP", artist: "Cardi B ft. Megan Thee Stallion" },
+  { title: "Money Trees", artist: "Kendrick Lamar ft. Jay Rock" },
 
   // ── 2014+ R&B ────────────────────────────────────────────────────────────
   { title: "Location", artist: "Khalid" },
@@ -55,6 +59,8 @@ export const NAME_THAT_TUNE: TuneEntry[] = [
   { title: "Die For You", artist: "The Weeknd & Ariana Grande" },
   { title: "Work", artist: "Rihanna" },
   { title: "Break My Soul", artist: "Beyoncé" },
+  { title: "Pink + White", artist: "Frank Ocean" },
+  { title: "Nights", artist: "Frank Ocean" },
 
   // ── 2014+ pop ────────────────────────────────────────────────────────────
   { title: "Blinding Lights", artist: "The Weeknd" },
@@ -62,8 +68,10 @@ export const NAME_THAT_TUNE: TuneEntry[] = [
   { title: "As It Was", artist: "Harry Styles" },
   { title: "Flowers", artist: "Miley Cyrus" },
   { title: "Cruel Summer", artist: "Taylor Swift" },
+  { title: "Anti-Hero", artist: "Taylor Swift" },
   { title: "Peaches", artist: "Justin Bieber" },
   { title: "Espresso", artist: "Sabrina Carpenter" },
+  { title: "Good 4 U", artist: "Olivia Rodrigo" },
 
   // ── 2014+ Afrobeats / Amapiano ───────────────────────────────────────────
   { title: "Water", artist: "Tyla" },
@@ -75,4 +83,7 @@ export const NAME_THAT_TUNE: TuneEntry[] = [
   { title: "Peru", artist: "Fireboy DML & Ed Sheeran" },
   { title: "Jerusalema", artist: "Master KG" },
   { title: "Alane", artist: "Ykee Benda" },
+  { title: "Soco", artist: "Wizkid, Terri, Spotless & Ceeza Milli" },
+  { title: "Sability", artist: "Asake & Wizkid" },
+  { title: "Higher", artist: "Master KG ft. Mahalia & Burna Boy" },
 ];

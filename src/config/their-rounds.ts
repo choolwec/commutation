@@ -57,6 +57,16 @@ export const OPPOSITES: OppositeCard[] = [
   { word: "Furious", accept: ["furious", "angry", "raging", "mad"] },
   { word: "Famous", accept: ["famous", "celebrity", "well known"] },
   { word: "Graceful", accept: ["graceful", "elegant", "smooth"] },
+  { word: "Empty", accept: ["empty", "bare", "vacant"] },
+  { word: "Fast", accept: ["fast", "quick", "speedy"] },
+  { word: "Clumsy", accept: ["clumsy", "awkward", "uncoordinated"] },
+  { word: "Shy", accept: ["shy", "timid", "bashful"] },
+  { word: "Loud", accept: ["loud", "noisy"] },
+  { word: "Proud", accept: ["proud", "boastful"] },
+  { word: "Nervous", accept: ["nervous", "anxious", "jittery"] },
+  { word: "Lazy", accept: ["lazy", "idle"] },
+  { word: "Injured", accept: ["injured", "hurt", "wounded"] },
+  { word: "Suspicious", accept: ["suspicious", "wary", "distrustful"] },
 ];
 
 // ─── SPELL IT OUT (THEIR_ROUNDS §1.2) ───────────────────────────────────────
@@ -76,17 +86,26 @@ export const SPELLING_WORDS: SpellingWord[] = [
   { word: "separate", say: "They sleep in separate rooms.", tier: 1 },
   { word: "definitely", say: "He is definitely lying.", tier: 1 },
   { word: "embarrass", say: "Please do not embarrass me tonight.", tier: 1 },
+  { word: "restaurant", say: "We're going to a restaurant tonight.", tier: 1 },
+  { word: "government", say: "The government made an announcement.", tier: 1 },
+  { word: "beautiful", say: "She looked beautiful at the wedding.", tier: 1 },
   { word: "rhythm", say: "She has no rhythm whatsoever.", tier: 2 },
   { word: "occurrence", say: "That was a strange occurrence.", tier: 2 },
   { word: "conscience", say: "His conscience finally caught up with him.", tier: 2 },
   { word: "maintenance", say: "The car needs maintenance again.", tier: 2 },
   { word: "privilege", say: "It is a privilege to be here.", tier: 2 },
   { word: "millennium", say: "Nobody has done that in a millennium.", tier: 2 },
+  { word: "acquaintance", say: "He's just an acquaintance, not a friend.", tier: 2 },
+  { word: "temperature", say: "Check the temperature before you go out.", tier: 2 },
+  { word: "immediately", say: "Come here immediately.", tier: 2 },
   { word: "entrepreneur", say: "Every entrepreneur says that at first.", tier: 3 },
   { word: "questionnaire", say: "You all filled in the questionnaire.", tier: 3 },
   { word: "bureaucracy", say: "The bureaucracy took three months.", tier: 3 },
   { word: "conscientious", say: "She is a conscientious worker.", tier: 3 },
   { word: "onomatopoeia", say: "Bang and crash are onomatopoeia.", tier: 3 },
+  { word: "unnecessarily", say: "You're being unnecessarily dramatic.", tier: 3 },
+  { word: "characteristic", say: "That's a very characteristic response from him.", tier: 3 },
+  { word: "inconvenience", say: "Sorry for the inconvenience.", tier: 3 },
 ];
 
 // ─── SURVEY SAYS (THEIR_ROUNDS §1.3) ────────────────────────────────────────
@@ -119,6 +138,20 @@ export const SURVEY_SAYS_PROMPTS: string[] = [
   "Name something you'd never post on your story",
   "Name a body part people complain about after a long day",
   "Name a thing this group is guaranteed to argue about today",
+  "Name something you do right before a video call starts",
+  "Name a thing everyone in this room has definitely Googled",
+  "Name something that instantly gives away someone's age",
+  "Name a reason to leave a WhatsApp group",
+  "Name something people say they'll do 'tomorrow' and never do",
+  "Name a thing you'd hide if someone unexpected visited right now",
+  "Name something that's always more expensive than it should be",
+  "Name a food everyone claims to hate but secretly eats",
+  "Name something you check the second you wake up",
+  "Name a thing that instantly makes a party better",
+  "Name something people exaggerate about on social media",
+  "Name a reason someone would mute a group chat",
+  "Name something everyone pretends to understand but doesn't",
+  "Name a thing this group would fight over on a road trip",
 ];
 
 // ─── 30 SECONDS (THEIR_ROUNDS §2.5) ─────────────────────────────────────────
@@ -144,6 +177,12 @@ export const THIRTY_SECOND_CARDS: string[][] = [
   ["Taxi driver", "Fireworks", "Exam hall", "Puppy", "Sandals"],
   ["Stadium", "Politician", "Ice cream", "Handshake", "Tortoise"],
   ["Wedding DJ", "Whistle", "Hospital", "Chameleon", "Pancakes"],
+  ["Wedding ring", "Zoom call", "Power cut", "Referee whistle", "School uniform"],
+  ["Braai", "Voice note", "Traffic police", "Sunset", "Group project"],
+  ["Hair extensions", "Landlord", "Data bundle", "Wedding speech", "Rainbow"],
+  ["Job interview", "Puppy", "Slow Wi-Fi", "Church bell", "Roadblock"],
+  ["Selfie stick", "Grandfather", "Delayed flight", "Cricket match", "Candle"],
+  ["Best man", "Power bank", "Rush hour", "Choir practice", "Umbrella"],
 ];
 
 // ─── CONTACT (THEIR_ROUNDS §2.3) ────────────────────────────────────────────
@@ -157,6 +196,7 @@ export const CONTACT_WORDS: string[] = [
   "THUNDER", "KITCHEN", "BLANKET", "MONSTER", "CAPTAIN", "WHISPER",
   "VILLAGE", "HARVEST", "PICTURE", "COMPASS", "TREASURE", "CHAMPION",
   "BIRTHDAY", "PASSPORT", "SANDWICH", "ELEPHANT", "STRANGER", "MIDNIGHT",
+  "WINDOW", "GARDEN", "PICNIC", "STADIUM", "AIRPORT", "CANDLE", "BRIDGE", "FESTIVAL",
 ];
 
 // ─── CENTRE STAGE (THEIR_ROUNDS §3.3) ───────────────────────────────────────
@@ -184,6 +224,16 @@ export const STAGE_CHALLENGES: StageChallenge[] = [
   { name: "The Auction", brief: "Auction off the person to your right. Start the bidding high." },
   { name: "The Trailer", brief: "Voice the trailer for a film about today. Deep voice, dramatic pauses." },
   { name: "The Apology", brief: "Publicly apologise for something you have absolutely not done." },
+  { name: "The Breakup", brief: "Deliver a dramatic breakup speech to an object in this room." },
+  { name: "The Coach", brief: "Give a locker-room pep talk before an imaginary, deeply unimportant task." },
+  { name: "The News Anchor", brief: "Report breaking news about something that happened in this room today." },
+  { name: "The Confession", brief: "Confess to a crime you did not commit, as dramatically as possible." },
+  { name: "The Reality Show", brief: "Give a reality-TV confessional booth interview about the last five minutes." },
+  { name: "The Superhero", brief: "Introduce yourself as a superhero whose only power is something completely useless." },
+  { name: "The Eulogy", brief: "Deliver a heartfelt eulogy for your phone battery." },
+  { name: "The Product Pitch", brief: "Pitch the room an invisible product like it's a TV shopping channel." },
+  { name: "The Diva", brief: "Storm off mid-sentence like the biggest diva in the industry, then return for an encore." },
+  { name: "The Commentator", brief: "Commentate on someone in this room doing something completely mundane, sports-style." },
 ];
 
 // ─── SPEED CARDS (THEIR_ROUNDS §3.1) ────────────────────────────────────────
@@ -202,6 +252,11 @@ export const SPEED_CARD_TWISTS: string[] = [
   "Swap seats with the person opposite before this hand starts.",
   "Whoever goes out first picks the twist for the next hand.",
   "Eyes on the table only. Look at another player's hand, take a card.",
+  "Reverse hand — play goes the other direction the whole hand.",
+  "One hand behind your back the entire hand.",
+  "Whisper only. No full voice allowed.",
+  "Winner picks a forfeit for the loser, decided by the room.",
+  "Everyone swaps one card blind with their neighbour before the hand starts.",
 ];
 
 // ─── QUESTION VOLLEY (THEIR_ROUNDS §3.4) ────────────────────────────────────
@@ -223,6 +278,12 @@ export const VOLLEY_OPENERS: string[] = [
   "Who here is the worst at replying to messages?",
   "What's the last thing that made you genuinely nervous?",
   "What do you spend far too much money on?",
+  "What's a rule you break the most?",
+  "Who here would you trust with your phone unlocked?",
+  "What's the last thing you Googled at 2am?",
+  "Who in this room gives the best advice?",
+  "What's something you've never admitted to a friend's face?",
+  "Who here would you want on your team in an actual emergency?",
 ];
 
 // ─── TRUTH OR DARE: THE FORFEIT DECK (THEIR_ROUNDS §2.1) ────────────────────
@@ -288,5 +349,21 @@ export const FORFEITS: Forfeit[] = [
   {
     content: "Voice-note the last person you went on a date with, asking them straight out if they'd do it again.",
     needs: "someone you've actually been on a date with",
+  },
+  {
+    content: "Call the last person who complimented you and ask them to say it again, on the record, in front of the room.",
+    needs: "someone who's complimented you recently",
+  },
+  {
+    content: "Voice-note a friend outside this room your honest one-sentence review of your own dating history.",
+    needs: "a close friend who isn't in this room",
+  },
+  {
+    content: "Text the last person you double-texted and ask them, straight out, if they noticed.",
+    needs: "someone you've double-texted recently",
+  },
+  {
+    content: "Call someone who's seen you at your absolute worst and ask them to describe it to the room, no filter.",
+    needs: "someone who's genuinely seen you at your worst",
   },
 ];
