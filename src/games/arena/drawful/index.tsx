@@ -41,7 +41,16 @@ function useTotalItems() {
 function Phone() {
   const { roster } = usePlayer();
   const { round, submissions, votes, secrets, isHost, call } = useRoom();
-  const promptItem = useCurrentItems().find((i) => i.kind === "role");
+  // deal_private() (0007) always inserts kind: 'private', never 'role' —
+  // 'role' is deal_roles()'s tag (Spyfall/Chameleon/Mafia's odd-one-out),
+  // a different function this game never calls. This was a straight typo:
+  // iAmArtist below could never be true for anyone, on any turn — the
+  // drawing canvas was completely unreachable. Every live test this session
+  // ran against Drawful happened to land on a non-artist device (the only
+  // kind that could ever exist), so "Turn 1 of 6" reading correctly after
+  // the earlier fix in this same file never actually proved the game
+  // playable — it only proved the counter was right.
+  const promptItem = useCurrentItems().find((i) => i.kind === "private");
   const total = useTotalItems();
   const cursor = round?.item_cursor ?? 0;
 
