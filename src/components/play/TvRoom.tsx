@@ -44,7 +44,7 @@ export function TvRoom() {
 }
 
 function GenericBoard() {
-  const { round, items, submissions, votes, events } = useRoom();
+  const { round, items, events } = useRoom();
   const { roster } = usePlayer();
 
   const cursor = round?.item_cursor ?? 0;
@@ -57,17 +57,11 @@ function GenericBoard() {
     [items, cursor],
   );
 
-  const answeredIds = useMemo(
-    () => new Set(submissions.filter((s) => s.idx === cursor).map((s) => s.player_id)),
-    [submissions, cursor],
-  );
-  const votedIds = useMemo(
-    () => new Set(votes.filter((v) => v.idx === cursor).map((v) => v.player_id)),
-    [votes, cursor],
-  );
-  const progressCount = votedIds.size || answeredIds.size;
-  const progressLabel = votedIds.size > 0 ? "voted" : "answered";
-
+  // Deliberately no "N have answered" here — see TvShell.tsx's note. This
+  // client holds no profile, so RLS hands it other people's submissions and
+  // votes only once the host has opened them, and a counter would read 0
+  // for the whole round. What IS visible before then is round_events, which
+  // is public by design, so that's what this board reacts to.
   // "Someone did something first" — the exact primitive Buzz In, Contact and
   // Paranoia's coin flip all already share (round_events, migration 0008).
   // Flashing whoever's most recent here is what makes a buzzer round land
@@ -151,24 +145,6 @@ function GenericBoard() {
             <span className="text-3xl">{lastEventPlayer.emoji}</span>
             <span className="text-2xl font-black" style={{ color: accent }}>
               {lastEventPlayer.name} {eventVerb[lastEvent.kind] ?? "went!"}
-            </span>
-          </div>
-        )}
-
-        {progressCount > 0 && (
-          <div className="flex items-center gap-2">
-            {roster.map((p, i) => (
-              <span
-                key={p.id}
-                className="h-3 w-3 rounded-full transition-all duration-500"
-                style={{
-                  background: i < progressCount ? accent : "var(--color-ink-3)",
-                  transitionDelay: `${i * 40}ms`,
-                }}
-              />
-            ))}
-            <span className="ml-2 text-sm font-bold uppercase tracking-wider text-mute">
-              {progressCount} {progressLabel}
             </span>
           </div>
         )}

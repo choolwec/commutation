@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
 import type { GameModule, GameViewProps } from "@/lib/game/types";
 import {
@@ -10,7 +9,7 @@ import {
   WaitingOnHost,
 } from "@/components/play/GameShell";
 import { SubmissionVote } from "@/components/play/SubmissionVote";
-import { Leaderboard } from "@/components/play/Leaderboard";
+import { TvShell } from "@/components/play/TvShell";
 import { FIBBAGE_FACTS } from "@/config/decks";
 
 /**
@@ -210,7 +209,6 @@ function Phone() {
 }
 
 function Tv({ round }: GameViewProps) {
-  const { roster } = usePlayer();
   const { items, submissions, secrets } = useRoom();
   const cursor = round.item_cursor;
   const item = items.find((i) => i.idx === cursor);
@@ -221,58 +219,42 @@ function Tv({ round }: GameViewProps) {
 
   if (!item) {
     return (
-      <main className="grid min-h-dvh place-items-center">
-        <p className="text-2xl font-bold text-mute">Dealing prompts…</p>
-      </main>
+      <TvShell icon="🎤" title="Fibbage" accent={GLOW} gameId="fibbage">
+        <p className="text-3xl font-bold text-mute">Dealing prompts…</p>
+      </TvShell>
     );
   }
 
   return (
-    <main className="relative grid min-h-dvh grid-cols-[1fr_360px] gap-8 overflow-hidden p-10">
-      <div
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{ background: `radial-gradient(ellipse 70% 55% at 50% 0%, color-mix(in oklab, ${GLOW} 25%, transparent), transparent 65%)` }}
-      />
-      <section className="flex flex-col items-center justify-center gap-7 text-center">
-        <p className="text-xl font-black uppercase tracking-[0.3em]" style={{ color: GLOW }}>
-          🎤 Fibbage
-        </p>
-        <p className="rise max-w-4xl text-4xl font-black leading-tight">{item.content}</p>
+    <TvShell icon="🎤" title="Fibbage" accent={GLOW} gameId="fibbage">
+      <p className="rise max-w-4xl text-4xl font-black leading-tight">{item.content}</p>
 
-        {round.phase === "play" && (
-          <p className="rise text-lg font-bold text-mute">
-            {here.length} of {roster.length} have written a lie…
-          </p>
-        )}
+      {round.phase === "play" && (
+        // Lies are sealed to their author until the host opens them, and
+        // this screen holds no profile — a counter here would read 0.
+        <p className="text-2xl font-bold text-mute">Writing their lies…</p>
+      )}
 
-        {(round.phase === "vote" || revealed) && here.length > 0 && (
-          <div className="rise flex w-full max-w-2xl flex-col gap-3">
-            {here.map((s) => {
-              const isTruth = revealed && s.id === truthId;
-              return (
-                <div
-                  key={s.id}
-                  className={`rounded-2xl border-2 px-6 py-4 text-left text-xl font-bold transition-all duration-500 ${
-                    isTruth
-                      ? "border-emerald-400 bg-emerald-400/15 text-emerald-200"
-                      : "border-line bg-ink-2 text-paper"
-                  }`}
-                >
-                  {s.value} {isTruth && "✓ the truth"}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <aside className="flex flex-col justify-center">
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-mute">
-          Leaderboard
-        </p>
-        <Leaderboard />
-      </aside>
-    </main>
+      {(round.phase === "vote" || revealed) && here.length > 0 && (
+        <div className="rise flex w-full max-w-2xl flex-col gap-3">
+          {here.map((s) => {
+            const isTruth = revealed && s.id === truthId;
+            return (
+              <div
+                key={s.id}
+                className={`rounded-2xl border-2 px-6 py-4 text-left text-xl font-bold transition-all duration-500 ${
+                  isTruth
+                    ? "border-emerald-400 bg-emerald-400/15 text-emerald-200"
+                    : "border-line bg-ink-2 text-paper"
+                }`}
+              >
+                {s.value} {isTruth && "✓ the truth"}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </TvShell>
   );
 }
 

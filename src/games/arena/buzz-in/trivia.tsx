@@ -6,7 +6,7 @@ import { useRoom } from "@/lib/game/room";
 import { getSupabase } from "@/lib/supabase/client";
 import type { GameModule, GameViewProps } from "@/lib/game/types";
 import { ContentCard } from "@/components/play/GameShell";
-import { Leaderboard } from "@/components/play/Leaderboard";
+import { TvShell, TvFlash } from "@/components/play/TvShell";
 import { TRIVIA } from "@/config/decks";
 import {
   BuzzButton,
@@ -193,75 +193,48 @@ function Tv({ round }: GameViewProps) {
 
   if (!q) {
     return (
-      <main className="grid min-h-dvh place-items-center">
-        <p className="text-2xl font-bold text-mute">Dealing questions…</p>
-      </main>
+      <TvShell icon="🎙️" title="Buzz In · Trivia" accent={GLOW} gameId="buzz_in_trivia">
+        <p className="text-3xl font-bold text-mute">Dealing questions…</p>
+      </TvShell>
     );
   }
 
   return (
-    <main className="relative grid min-h-dvh grid-cols-[1fr_360px] gap-8 overflow-hidden p-10">
-      <div
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{ background: `radial-gradient(ellipse 70% 55% at 50% 0%, color-mix(in oklab, ${GLOW} 25%, transparent), transparent 65%)` }}
-      />
-      <section className="flex flex-col items-center justify-center gap-8 text-center">
-        <p className="text-xl font-black uppercase tracking-[0.3em]" style={{ color: GLOW }}>
-          🎙️ Buzz In · Trivia
+    <TvShell icon="🎙️" title="Buzz In · Trivia" accent={GLOW} gameId="buzz_in_trivia">
+      <p className="rise max-w-4xl text-5xl font-black leading-tight">{q.q}</p>
+
+      <div className="grid w-full max-w-2xl grid-cols-2 gap-4">
+        {q.options.map((o, i) => {
+          const isCorrect = revealed && i === q.answer;
+          return (
+            <div
+              key={o}
+              className={`rounded-2xl border-2 px-5 py-5 text-xl font-bold transition-all duration-500 ${
+                isCorrect
+                  ? "border-emerald-400 bg-emerald-400/15 text-emerald-200"
+                  : "border-line bg-ink-2 text-paper"
+              }`}
+            >
+              {o} {isCorrect && "✓"}
+            </div>
+          );
+        })}
+      </div>
+
+      {buzz && !ruling && (
+        <TvFlash accent={GLOW}>{winnerName ?? "Someone"} buzzed first!</TvFlash>
+      )}
+      {ruling && (
+        <p
+          className={`rise text-3xl font-black ${
+            ruling.value === "correct" ? "text-emerald-300" : "text-flame"
+          }`}
+        >
+          {winnerName} was {ruling.value === "correct" ? "right — +150" : "wrong — −25"}
         </p>
-        <p className="rise max-w-4xl text-5xl font-black leading-tight">{q.q}</p>
-
-        <div className="grid w-full max-w-2xl grid-cols-2 gap-4">
-          {q.options.map((o, i) => {
-            const isCorrect = revealed && i === q.answer;
-            return (
-              <div
-                key={o}
-                className={`rounded-2xl border-2 px-5 py-5 text-xl font-bold transition-all duration-500 ${
-                  isCorrect
-                    ? "border-emerald-400 bg-emerald-400/15 text-emerald-200"
-                    : "border-line bg-ink-2 text-paper"
-                }`}
-              >
-                {o} {isCorrect && "✓"}
-              </div>
-            );
-          })}
-        </div>
-
-        {buzz && !ruling && (
-          <div
-            className="rise flex items-center gap-3 rounded-full border-2 px-8 py-4"
-            style={{
-              borderColor: GLOW,
-              background: `color-mix(in oklab, ${GLOW} 18%, transparent)`,
-              boxShadow: `0 0 48px color-mix(in oklab, ${GLOW} 45%, transparent)`,
-            }}
-          >
-            <span className="text-2xl font-black" style={{ color: GLOW }}>
-              {winnerName ?? "Someone"} buzzed first!
-            </span>
-          </div>
-        )}
-        {ruling && (
-          <p
-            className={`rise text-2xl font-black ${
-              ruling.value === "correct" ? "text-emerald-300" : "text-flame"
-            }`}
-          >
-            {winnerName} was {ruling.value === "correct" ? "right — +150" : "wrong — −25"}
-          </p>
-        )}
-        {!buzz && <p className="text-lg text-mute">Buzzers are live…</p>}
-      </section>
-
-      <aside className="flex flex-col justify-center">
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-mute">
-          Leaderboard
-        </p>
-        <Leaderboard />
-      </aside>
-    </main>
+      )}
+      {!buzz && <p className="text-xl text-mute">Buzzers are live…</p>}
+    </TvShell>
   );
 }
 

@@ -5,7 +5,7 @@ import { usePlayer } from "@/lib/player";
 import { useRoom } from "@/lib/game/room";
 import { getSupabase } from "@/lib/supabase/client";
 import type { GameModule, GameViewProps } from "@/lib/game/types";
-import { Leaderboard } from "@/components/play/Leaderboard";
+import { TvShell, TvFlash } from "@/components/play/TvShell";
 import { NAME_THAT_TUNE } from "@/config/name-that-tune";
 import {
   BuzzButton,
@@ -271,59 +271,29 @@ function Tv({ round }: GameViewProps) {
 
   if (!meta?.title) {
     return (
-      <main className="grid min-h-dvh place-items-center">
-        <p className="text-2xl font-bold text-mute">Cueing up the next one…</p>
-      </main>
+      <TvShell icon="🎧" title="Buzz In · Name That Tune" accent={GLOW} gameId="buzz_in_music">
+        <p className="text-3xl font-bold text-mute">Cueing up the next one…</p>
+      </TvShell>
     );
   }
 
   return (
-    <main className="relative grid min-h-dvh grid-cols-[1fr_360px] gap-8 overflow-hidden p-10">
-      <div
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background: `radial-gradient(ellipse 70% 55% at 50% 0%, color-mix(in oklab, ${GLOW} 25%, transparent), transparent 65%)`,
-        }}
-      />
-      <section className="flex flex-col items-center justify-center gap-8 text-center">
-        <p className="text-xl font-black uppercase tracking-[0.3em]" style={{ color: GLOW }}>
-          🎧 Buzz In · Name That Tune
-        </p>
+    <TvShell icon="🎧" title="Buzz In · Name That Tune" accent={GLOW} gameId="buzz_in_music">
+      <TvVinyl spinning={!buzz} artworkUrl={guessed ? meta.artworkUrl : undefined} />
 
-        <TvVinyl spinning={!buzz} artworkUrl={guessed ? meta.artworkUrl : undefined} />
+      {!buzz && <p className="text-xl text-mute">Buzzers are live…</p>}
 
-        {!buzz && <p className="text-lg text-mute">Buzzers are live…</p>}
+      {buzz && !guessed && (
+        <TvFlash accent={GLOW}>{winnerName ?? "Someone"} buzzed first!</TvFlash>
+      )}
 
-        {buzz && !guessed && (
-          <div
-            className="rise flex items-center gap-3 rounded-full border-2 px-8 py-4"
-            style={{
-              borderColor: GLOW,
-              background: `color-mix(in oklab, ${GLOW} 18%, transparent)`,
-              boxShadow: `0 0 48px color-mix(in oklab, ${GLOW} 45%, transparent)`,
-            }}
-          >
-            <span className="text-2xl font-black" style={{ color: GLOW }}>
-              {winnerName ?? "Someone"} buzzed first!
-            </span>
-          </div>
-        )}
-
-        {guessed && (
-          <div className="rise">
-            <p className="text-4xl font-black leading-tight">“{meta.title}”</p>
-            <p className="mt-2 text-xl font-bold text-mute">{meta.artist}</p>
-          </div>
-        )}
-      </section>
-
-      <aside className="flex flex-col justify-center">
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-mute">
-          Leaderboard
-        </p>
-        <Leaderboard />
-      </aside>
-    </main>
+      {guessed && (
+        <div className="rise">
+          <p className="text-5xl font-black leading-tight">“{meta.title}”</p>
+          <p className="mt-3 text-2xl font-bold text-mute">{meta.artist}</p>
+        </div>
+      )}
+    </TvShell>
   );
 }
 
