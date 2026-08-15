@@ -11,9 +11,13 @@ overnight autonomous polish pass (see §13); **updated again 14 Aug 2026** when
 the group's own twelve invented rounds were finally built (see §14 — the game
 count is now **25**, not 16); **updated again 14 Aug 2026, later the same day**
 for the art pass (see §16 — Drawful also got its bespoke `TvView`, closing an
-item §12/§13 had both flagged as outstanding). If it's later than that, treat
-anything time-sensitive below (survey counts, "not yet built") as stale and
-re-verify rather than trust it.
+item §12/§13 had both flagged as outstanding); **updated again night of
+14→15 Aug 2026** for a second overnight polish pass (see §17 — nine more
+bespoke TvViews, four real gameplay bugs found and fixed (including one in
+Mafia that made its core night-vote mechanic completely unplayable, in two
+parts — the second only surfaced on re-verification), and the app's first
+sound effects). If it's later than that, treat anything time-sensitive below (survey counts,
+"not yet built") as stale and re-verify rather than trust it.
 
 ---
 
@@ -1019,3 +1023,295 @@ fighting for the same `z-50` layer.
 - The other 22 games still use only their `tileArt.tsx` SVG motif, no photo
   key art — deliberate, per the "already covered" reasoning above, not a
   gap to fill later unless the brief changes.
+
+---
+
+## 17. Overnight polish, part two — night of 14→15 Aug 2026, briefed by `docs/POLISH_BRIEF.md`
+
+A second autonomous pass, same branch discipline as before except this time
+**straight to `master`** (Choolwe's explicit call for tonight, recorded in
+`docs/POLISH_BRIEF.md` §8 — progressive deploy, verify-then-push per change,
+auto-revert if the live site ever breaks). `docs/POLISH_BRIEF.md` is the
+brief this section reports against; it's kept in the repo as the record of
+what was asked for, same convention as `docs/AUTOMODE_BRIEF.md` before it.
+
+**First thing found, before any of the brief's own punch list:** ten commits
+(`6180e41`..`b83f303`, 01:54–02:47 this same night) were already on `master`,
+deployed, and green, but never written up here — a bespoke `TvView` for
+Best Answer, The Chameleon, Survey Says, Who Wrote It?, Paranoia, Fibbage,
+and Centre Stage, plus a real board for both Buzz In variants, `TvShell.tsx`
+factored out as the shared frame those all build on, and a fix to
+`check.mjs` releasing a profile it never claimed. That work is real,
+already verified (`gh run watch` + `npm run live` after each push), and is
+folded into this section rather than getting its own — it's the same
+overnight session, just a context handoff partway through. One of those
+nine is worth flagging on its own: **Buzz In: Trivia's old generic-fallback
+board was dumping the whole `round_item` straight onto the TV — for a
+trivia question, that's the answer index in plain JSON, readable by anyone
+glancing at the screen before the host ruled.** Fixed the same night, before
+this section's own bug hunt started; mentioned here because it's the same
+bug *class* (§5 below) as two of the ones this pass found on its own.
+
+At this point, 10 of the app's TvViews are bespoke (Drawful from §16, plus
+these 9); the other 15 games still fall back to `TvRoom.tsx`'s generic
+board, which is deliberately built to never sit blank (accent color, tile
+motif, `round_events`-driven "who just did something" flash, a live clock)
+rather than a gap.
+
+### Stream one — the bug hunt (§5 of the brief), and what it actually found
+
+The brief was explicit that this is the highest-value stream, and it
+proved out: **four real, previously-unknown bugs**, three of them
+severe enough that they would have surfaced live on Saturday, not in a
+screenshot. All four were found by actually clicking through a full round
+in a real browser — none of them were visible from reading one screen, and
+none of them threw, typechecked wrong, or showed up in `npm run lint`.
+
+**The method, since it's worth keeping for next time:** a throwaway
+Playwright harness (`scripts/_bughunt.mjs` + `scripts/_bughunt_games.mjs`,
+written, used for several hours, then deleted per the repo's own "repro.mjs"
+convention, HANDOFF §8) that claimed two throwaway profiles
+(`__bh_host__`/`__bh_guest__`, never the six real ones), pointed one browser
+context at `/test` as host, one at `/test` as guest, and a third at `/tv`,
+set `game_room.host_player` to the throwaway host for the duration (restored
+in every run's `finally`, verified clean after each), and drove real games
+through their real phase transitions via the actual buttons — not raw SQL,
+per the brief's own §4 warning about that exact mistake. For games with a
+random "subject"/"odd one out" (Mafia, Know Me Best), a small DB-side swap
+function forced the throwaway player into that role so its own view could
+actually be exercised, since the honest odds of a 2-in-8-seat random draw
+landing on the test account are otherwise not worth waiting on. Two real
+harness bugs surfaced and got fixed along the way (documented in the
+script's own commit history before deletion, so only the lesson survives
+here): an `Escape` keypress fired before the round had finished loading,
+racing the rules-sheet auto-open exactly the way §4 warned about, so early
+runs showed false "stalled" results that were actually just clicks landing
+on a covered screen; and a too-broad Playwright locator
+(`"main section, main div"` + `.first()`) matched the header's "?" button
+before it ever reached an actual vote choice, reopening the rules sheet and
+cascading a false failure into every game launched afterward. Both are
+exactly the "verification that looked thorough and wasn't" trap §4
+describes — worth remembering the shape of, not just the fix.
+
+**Found and fixed, all four deployed and smoke-tested live:**
+
+1. **Mafia's night-vote screen could never render, for the mafia player, on
+   any night, ever — and the first fix alone would have quietly broken again
+   on night two.** `round_secrets` is sealed until a round's `phase` is
+   `reveal`/`done` (0005's RLS — `secrets open at the reveal`). Mafia derived
+   `iAmMafia` from `secrets.find(s => s.idx === 0)?.author`, which is
+   therefore only non-null exactly when `revealed` is true — but the
+   night-vote UI was gated on `iAmMafia && !revealed`, two conditions that
+   structurally can never hold at the same time. The mafia player saw
+   "Eyes closed. The Mafia is choosing" on every single night, same as
+   everyone else — there was no way, ever, for them to actually pick a
+   target through the app. `src/games/huddle/mafia/index.tsx` — fixed by
+   deriving `iAmMafia` from the player's own role card
+   (`round_items`, `visible_to`-scoped, available immediately, not phase
+   gated) — the exact source Spyfall already trusts correctly for
+   "am I the spy". `mafiaId` from `secrets` is kept for the reveal-time uses
+   that are genuinely safe (`nightVote` lookup, `endGame` scoring). **A
+   second pass caught a follow-up bug in the same fix**, before it was fully
+   trusted: the role card was read via `useCurrentItems()`, which filters to
+   `round_items.idx === item_cursor` — correct for every other caller of
+   that hook, wrong for Mafia specifically, which repurposes `item_cursor`
+   as its own night/day counter (`isNight = cursor % 2 === 0`) rather than
+   an item index. The role card is dealt once, always at `idx 0`. Spyfall
+   and Chameleon deal the identical shape at `idx 0` but never advance the
+   cursor at all, so this exact mismatch never bit them. The moment the
+   cursor first advanced past night one (host taps "Move to day"), `myRole`
+   — and `iAmMafia` with it — would have silently gone back to undefined/
+   `false` for everyone, right as night two arrived; "Loading your role…"
+   would have shown forever after, too. Fixed by reading the raw `items`
+   array (cursor-independent) instead of `useCurrentItems()`, filtered only
+   by `kind === "role"`. Verified live through a real night-1 → day-1 →
+   night-2 cycle before trusting it — the first fix alone read as complete
+   and passed a night-1-only check clean. While in the file: the mafia's
+   own night-vote self-exclusion never worked either, on any night — it
+   excluded `mafiaId`, sourced from the same sealed `secrets`, at exactly
+   the moment it's needed; low-severity given the game is human-moderated
+   anyway, but a one-line fix now that `iAmMafia` reliably gates the branch
+   (exclude `me.id` instead).
+2. **Drawful could only ever complete its first artist's turn before the
+   whole round silently ended.** Drawful deals nothing but `visible_to`-scoped
+   private prompts (`deal_private`, one per artist) — no public marker, unlike
+   every other private-item game (Act It Out, Spell It Out, 30 Seconds,
+   Speed Cards all also deal a public `deal_deck` marker alongside their
+   private payload, specifically so this works). `useTotalItems()`
+   (duplicated in both `PhoneView` and `TvView`) counts distinct `idx`
+   values in the *client's own visible* `items` array — and since RLS means
+   every device, including `/tv` (which holds no profile and therefore sees
+   *nothing* `visible_to`-scoped), can see at most one such row ever,
+   `total` was pinned at `1` for literally every player, every turn, the
+   whole game. That makes `isLast = cursor >= total - 1` true starting from
+   turn one, so the host's "Next turn" button silently behaved as "Finish
+   round" — tap it after the very first artist and the round just ends.
+   `src/games/arena/drawful/index.tsx` — fixed by dealing one public
+   `deal_deck` marker per turn, copying the pattern the other four
+   private-item games already use correctly. Verified live: the turn
+   counter reads "Turn 1 of 6" now, not "Turn 1 of 1".
+3. **Both Buzz In variants showed every player — not just the host — a live
+   "Next →" button that silently failed for anyone who tapped it.**
+   `BuzzHost` (`src/games/arena/buzz-in/shared.tsx`, shared by Trivia and
+   Name That Tune) rendered its dock unconditionally; every other game in
+   the app gates its dock on `isHost`. A guest who tapped it would hit
+   `set_cursor`/`set_phase`'s `assert_host()` check and fail server-side
+   with nothing shown — the tap just does nothing, with no explanation.
+   Fixed by adding an `isHost` prop and gating the dock on it, same as
+   everywhere else.
+4. **`most_likely_to` had no fallback if its one survey question came up
+   dry.** `src/config/decks.ts` has carried a 16-prompt `MOST_LIKELY_TO`
+   reserve deck since it was written, with a comment saying "these run
+   after" the survey's own prompts — the exact shape `best_answer` already
+   uses for its own reserve (`BEST_ANSWER_PROMPTS`) — but `most_likely_to`'s
+   `start()` never actually called it. If `most_likely_prompt` had zero
+   answers, the game would just throw and refuse to start, with the
+   already-written fallback sitting there unused. Found auditing `decks.ts`
+   for dead exports (`CHARADES`, `MINUTE_CHALLENGES`, `CHAOS_CARDS`,
+   `WHEEL_SEGMENTS` are similarly unused — those back planned Tier-3 games
+   that were never built, so leaving them is harmless and possibly useful
+   as verbal-round material; `MOST_LIKELY_TO` was the one actually meant to
+   be load-bearing). Not high-probability on the real day (several people
+   have real answers to that question per §13/§14's counts), but a real gap
+   with a one-line-away fix already sitting in the file. Wired up, mirroring
+   `best_answer`'s exact try/`start_round`-then-`start_deck_round` shape.
+
+**Content, not code:** two cards in `their-rounds.ts`'s `FORFEITS` deck
+(Truth or Dare's Reckless-tier forfeit, §14) got rewritten after reading the
+whole deck fresh, per the brief's own explicit ask. One sent an ambiguous,
+romantic-sounding text ("I've been thinking about you all afternoon") to
+"the person you message most today" — anyone from a parent to a coworker,
+with zero context that it's a party game; softened, and now tells the
+recipient it's a dare right after. The other asked the room to compose a
+message to an ex — a genuinely common source of real regret, aimed at
+someone with existing romantic history who never agreed to be part of the
+bit; replaced with a room-writes-it text to a gossipy friend instead, same
+nosy-not-cruel shape, no reopened wounds. This is a judgement call, not a
+fact-check — worth a skim before Saturday if there's time, same as §14
+already flagged for the whole deck.
+
+**Verified, and how:** every fix above got a live click-through via the
+harness (screenshots reviewed, not just "did it typecheck") before being
+committed, `npx tsc --noEmit` / `npm run lint` (27-warning baseline held,
+confirmed clean of the harness's own throwaway lint noise before each
+commit) / `npm run build` all clean, and `npm run check:engine` (18 checks)
+green after each push. **`npm run check` (Stage 1) hit Supabase's
+anonymous-signin rate limit (~30/hr/IP, HANDOFF §8's own documented
+ceiling) for roughly 40 minutes from around 04:15** — genuinely exhausted
+by the volume of throwaway browser contexts this session's harness spun up
+(three fresh anon sign-ins per run, run repeatedly while debugging the
+harness itself, on top of the earlier undocumented session's own usage).
+It cleared on its own by ~04:55, confirmed with a clean `npm run check`
+run (all 12 checks) at that point — Stage 1 was never actually at risk;
+nothing this session touched its code, and this was the same ceiling
+HANDOFF §8 already documents as a known, temporary, non-regression signal
+whenever it's hit.
+
+**Hot Takes, Never Have I Ever, The Deep End, Fibbage, and Best Answer —
+eventually reached, on a third attempt.** The first live batch ran out of
+rate-limit budget before getting to these five; a second, faster attempt
+(`scripts/_final_check.mjs`) hit a real harness artifact instead of a clean
+result — it screenshotted too soon after launching each game and caught
+mid-deal state. Fibbage's `start()` alone makes 8 sequential awaited RPC
+calls (`start_deck_round` + `deal_deck` + `seed_truth_submission` × 6), and
+a 1200ms wait wasn't enough for that to settle, so one screenshot showed
+Fibbage's own title bar over The Deep End's leftover test content — a
+stale-fetch artifact from the round that had just ended, not an app bug;
+the client hadn't refetched `items` yet when the screenshot fired. A third
+attempt (`scripts/_final_check2.mjs`, same deleted-after-use convention),
+patient this time — it polls the database for the new round's items to
+actually exist before touching anything, rather than a fixed wait — got a
+clean run: **zero page/console errors across all five**, correct phase
+transitions everywhere they were exercised (Hot Takes and The Deep End
+both reached `phase=done` cleanly; Never Have I Ever, Fibbage, and Best
+Answer each correctly advanced `item_cursor` through several items before
+running past this pass's step budget — Fibbage in particular needs four
+dock taps per item, not the one-or-two every other game needs, so ten
+steps covers barely more than two facts of six). Nothing found, and this
+time on real signal, not a guess. All five also read clean on the earlier
+full line-by-line pass against the same bug classes §5 of the brief calls
+out. Truth or Dare's forfeit card was reached and confirmed working live
+in the very first batch, before the rate limit hit.
+
+### Stream two and three
+
+The brief's design-research stream (§6) is largely covered by the
+nine-TV-board work this section opened with — that *is* the highest-value
+design item §6 called out ("the nine TV boards that exist... set the
+standard... the other 16 fall back to the generic board").
+
+**Stream three's sound system got built, once the rate limit cleared and
+there was runway left to verify it properly.** §7: "there is none anywhere.
+A buzzer, a reveal sting, a timer tick — even three well-chosen effects
+would transform how the room feels." Deliberately not a per-game
+integration — 25 files' worth of edits and 25 files' worth of risk the
+morning of the event is the wrong shape for this late in a session. Instead,
+`src/lib/sound.ts` (three synthesized WebAudio tones, no CDN, no shipped
+audio files — `tick`/`buzz`/`reveal`) wired into the three shared components
+every game already renders through:
+
+- `RoundTimer.tsx` — a tick on the last 3 seconds of any countdown, guarded
+  by a ref so the 250ms poll underneath can't replay it several times
+  inside one second.
+- `src/games/arena/buzz-in/shared.tsx` — a buzz on the *local* tap, not the
+  server's confirmation of who won; a real buzzer gives instant feedback
+  regardless of whether you turn out to be first, and waiting for a
+  round-trip would make it land noticeably late.
+- `GameShell.tsx` — a three-note reveal sting, firing once when a round is
+  actually *observed* transitioning into `reveal` (a ref starting at the
+  current phase, not `undefined`, so rejoining an already-revealed round
+  doesn't retroactively play it).
+
+A mute toggle (🔊/🔇) sits in `GameShell`'s header next to the existing "?"
+and "✕". Its state is read via a **lazy `useState` initializer**, not an
+effect — copying `rulesOpen`'s own pattern two lines above it in the same
+file, and for the same reason: a `setState` inside a bare effect here trips
+the exact lint rule this codebase already treats as a real bug class.
+**This one was actually caught by `npm run lint` before it ever reached a
+browser** — the first draft used an effect, lint failed with an error (not
+a warning), and the fix was switching to the initializer pattern already
+sitting right there to copy. Exactly the verification loop doing its job.
+
+Audio unlocks on the same claim-tap gesture the whole app already requires
+before any of this can render (PLAN.md's iOS notes), so there's no separate
+"tap to enable sound" screen to build.
+
+**Verified live**, not just typechecked: header layout holds even on the
+longest title in the app ("Buzz In · Name That Tune", wraps to two lines,
+all three icons still sit cleanly with no overlap — checked by measuring
+bounding boxes, not eyeballing a screenshot); the mute toggle flips and
+survives a page reload; a round driven through to its own reveal exercises
+the sting with zero page/console errors; Buzz In's buzzer path exercised
+directly on both the shared button and the host's real dock. Throwaway
+verification script (`scripts/_sound_check.mjs`), deleted after use, same
+convention as every other diagnostic this session.
+
+**Haptics** (also suggested in §7) was not attempted: PLAN.md's own stack
+section already ruled it out on arrival — "No haptics. The Vibration API
+doesn't exist on Safari, full stop," and all six phones are iPhones — so
+it would be dead code on every device that matters, not a small win.
+
+### Verified, end to end
+
+`npx tsc --noEmit`, `npm run lint` (27-warning baseline, unchanged),
+`npm run build` (all 9 routes prerender), `npm run check:engine`
+(18 checks), and `npm run check` (12 checks, once the rate limit cleared
+around 04:55 — see above) all pass clean at the tip, including after the
+sound system landed. Every change above — five bug fixes plus the sound
+system — was pushed as its own commit, watched through `gh run watch` to
+a successful deploy, then confirmed with `npm run live` before moving to
+the next — the live site was never left broken.
+
+### Still open
+
+- **A richer Awards/hub "moment" polish** — the countdown hitting zero, the
+  Awards screen's own weight — called out by the brief, not attempted
+  beyond what already existed (both already have hero art from §16 and
+  function correctly; deeper choreography wasn't judged worth the risk this
+  late relative to its value). Sound (§7's other ask) did get built — see
+  stream two/three above.
+- **Real six-tab dress rehearsal on real iPhones, and the bypass
+  code/venue** — same items every session since §12 has carried forward;
+  still the bar, still Choolwe's own to run. Venue is done (§10 of
+  `docs/POLISH_BRIEF.md`); bypass code was set by Choolwe directly and
+  stays undocumented here on purpose (§6).
