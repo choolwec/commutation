@@ -1186,7 +1186,21 @@ describes — worth remembering the shape of, not just the fix.
    render, a drawing submits successfully (confirmed via a direct
    `submissions` table read — `kind: 'drawing'`, correct `player_id`), and
    the host's dock correctly progresses to "Drawing's in → everyone titles
-   it" afterward.
+   it" afterward. **Once this class of bug turned up (a hardcoded `kind`
+   string TypeScript can't check, since `RoundItem.kind` is typed as plain
+   `string`), every `.kind === "..."` comparison across all 25 games got
+   cross-referenced by hand against what its actual dealing RPC inserts** —
+   `deal_deck` → `'deck'`, `deal_roles` → `'role'`, `deal_private`/
+   `deal_private_answers` → `'private'`, `deal_hidden_answer`/
+   `deal_test_hidden` → `'prompt'`, `deal_from_survey`/`deal_test_pair` →
+   `'survey'`, `deal_forfeit` → `'forfeit'` (public marker) + `'private'`
+   (the card), `contact_reveal_letter` → `'prefix'`, plus every
+   client-inserted `submissions.kind`/`round_events.kind` string checked
+   against the same file's own insert. Drawful was the only mismatch in the
+   entire codebase — everything else lines up. Worth knowing the technique
+   exists if a 26th game ever gets added: this bug class throws nothing,
+   typechecks clean, and only shows up as "the screen that should have
+   content just doesn't" on the one specific device that would ever notice.
 3. **Both Buzz In variants showed every player — not just the host — a live
    "Next →" button that silently failed for anyone who tapped it.**
    `BuzzHost` (`src/games/arena/buzz-in/shared.tsx`, shared by Trivia and
