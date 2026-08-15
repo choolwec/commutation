@@ -102,6 +102,7 @@ export function BuzzHost({
   cursor,
   total,
   glow,
+  isHost,
   answerLabel,
   children,
   onNext,
@@ -111,6 +112,15 @@ export function BuzzHost({
   cursor: number;
   total: number;
   glow: string;
+  /** Every other game in the app gates its dock on this — Buzz In's shared
+   *  shell didn't, so both variants showed a "Next →" button to every
+   *  player, not just the host. Tapping it as a guest failed server-side
+   *  (set_cursor/set_phase are assert_host()-gated) but the button itself
+   *  had no business being visible to them in the first place. Found via a
+   *  bug-hunt pass that specifically checks non-host views (POLISH_BRIEF §5
+   *  — "most bugs live here, the host's device is the one that got
+   *  tested"). */
+  isHost: boolean;
   answerLabel?: string;
   children: React.ReactNode;
   onNext: () => void;
@@ -122,14 +132,16 @@ export function BuzzHost({
       title={title}
       subtitle={`Round ${cursor + 1} of ${total}`}
       dock={
-        <div className="flex gap-2 pt-3">
-          <PrimaryButton
-            style={{ background: glow }}
-            onClick={cursor >= total - 1 ? onFinish : onNext}
-          >
-            {cursor >= total - 1 ? "Finish round" : "Next →"}
-          </PrimaryButton>
-        </div>
+        isHost ? (
+          <div className="flex gap-2 pt-3">
+            <PrimaryButton
+              style={{ background: glow }}
+              onClick={cursor >= total - 1 ? onFinish : onNext}
+            >
+              {cursor >= total - 1 ? "Finish round" : "Next →"}
+            </PrimaryButton>
+          </div>
+        ) : undefined
       }
     >
       {children}

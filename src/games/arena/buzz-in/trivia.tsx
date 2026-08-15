@@ -111,6 +111,7 @@ function Phone() {
       cursor={round.item_cursor}
       total={total}
       glow={GLOW}
+      isHost={isHost}
       onNext={next}
       onFinish={finish}
     >
