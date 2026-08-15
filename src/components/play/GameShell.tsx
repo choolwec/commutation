@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRoom } from "@/lib/game/room";
 import { RULES } from "@/games/rules";
+import { sound, isMuted, setMuted } from "@/lib/sound";
 import { useExit } from "./ExitContext";
 
 // Files in public/ are copied verbatim and get no automatic rewriting — see
@@ -102,6 +103,33 @@ export function GameShell({
     }
   });
 
+  // Lazy initializer, not an effect — same reasoning as rulesOpen just
+  // above: this only ever mounts once Gate/PlayGate have already resolved
+  // real client-side data, so there's no server-rendered counterpart for a
+  // synchronous localStorage read to hydration-mismatch against, and a
+  // setState-in-effect here would trip the same lint rule the codebase
+  // already treats as a real bug class (HANDOFF §9's typing-loss fix).
+  const [muted, setMutedState] = useState(() => isMuted());
+  function toggleMute() {
+    const next = !muted;
+    setMuted(next);
+    setMutedState(next);
+  }
+
+  // The reveal sting: fires once when THIS device observes a round actually
+  // transition into 'reveal' — not on mount, and not every render while it
+  // stays there. prevPhase starts as the CURRENT phase (not undefined), so
+  // rejoining a round that's already revealed doesn't retroactively play the
+  // sting — only watching it happen live does.
+  const prevPhase = useRef(round?.phase);
+  useEffect(() => {
+    const was = prevPhase.current;
+    prevPhase.current = round?.phase;
+    if (round?.phase === "reveal" && was && was !== "reveal") {
+      sound.reveal();
+    }
+  }, [round?.phase]);
+
   return (
     <main className="relative z-[2] mx-auto flex min-h-dvh max-w-md flex-col px-5 pad-safe-t">
       <header className="rise">
@@ -109,6 +137,17 @@ export function GameShell({
           <p className="flex flex-1 items-center gap-2 text-lg font-black leading-tight tracking-tight">
             <span className="text-xl">{icon}</span> {title}
           </p>
+          {round && (
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-label={muted ? "Unmute sound effects" : "Mute sound effects"}
+              aria-pressed={muted}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line text-xs text-mute transition active:scale-90"
+            >
+              {muted ? "🔇" : "🔊"}
+            </button>
+          )}
           {gameId && rules && (
             <button
               type="button"

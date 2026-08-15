@@ -5,6 +5,7 @@ import { usePlayer } from "@/lib/player";
 import { useRoom, useCurrentItems } from "@/lib/game/room";
 import { getSupabase } from "@/lib/supabase/client";
 import { GameShell, PrimaryButton, WaitingOnHost } from "@/components/play/GameShell";
+import { sound } from "@/lib/sound";
 
 /**
  * BUZZ IN — shared skeleton for both variants (Trivia / Name That Tune).
@@ -49,6 +50,11 @@ export function useBuzzState() {
   async function buzz() {
     const supabase = getSupabase();
     if (!supabase || !round || !me || locked || buzzing) return;
+    // Fires on the local tap, not once the server confirms who won — a real
+    // buzzer gives whoever slams it immediate feedback regardless of
+    // whether they turn out to be first, and waiting for round-trip
+    // confirmation would make the sound land noticeably late.
+    sound.buzz();
     setBuzzing(true);
     await supabase.from("round_events").insert({
       round_id: round.id,

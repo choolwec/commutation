@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRoom } from "@/lib/game/room";
+import { sound } from "@/lib/sound";
 
 /**
  * Counts down from `round.started_at`, not from a local setTimeout.
@@ -34,14 +35,26 @@ export function RoundTimer({
   const { round, isHost } = useRoom();
   const [remaining, setRemaining] = useState(seconds);
   const startedAt = from ?? round?.started_at;
+  // Every phone (and the TV) counts down from the same server timestamp, so
+  // every device crosses each integer second at the same moment — the tick
+  // plays on all of them, which is the point for the last few seconds of a
+  // shared clock. Tracks the last second it fired for so the 250ms poll
+  // below doesn't replay it several times while sitting inside one second.
+  const lastTicked = useRef<number | null>(null);
 
   useEffect(() => {
     if (!startedAt) return;
     const start = new Date(startedAt).getTime();
+    lastTicked.current = null;
 
     const tick = () => {
       const left = Math.max(0, seconds - (Date.now() - start) / 1000);
       setRemaining(left);
+      const whole = Math.ceil(left);
+      if (whole > 0 && whole <= 3 && whole !== lastTicked.current) {
+        lastTicked.current = whole;
+        sound.tick();
+      }
       return left;
     };
 
